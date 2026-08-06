@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Sun, CheckSquare, Clock, Folder, BarChart3, Settings } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Sun, CheckSquare, Clock, Folder, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { useUser } from "@/hooks/use-user";
 
 const navItems = [
   { href: "/", label: "Сегодня", icon: Sun },
@@ -16,6 +18,19 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+  const { profile, loading } = useUser();
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/auth");
+    router.refresh();
+  }
+
+  const name = profile?.name || "User";
+  const email = profile?.email || "";
+  const initial = name.charAt(0).toUpperCase();
 
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-white dark:bg-ios-card-dark border-r border-ios-separator dark:border-white/10 z-50">
@@ -50,16 +65,23 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-ios-separator dark:border-white/10">
+      <div className="p-4 border-t border-ios-separator dark:border-white/10 space-y-1">
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
-            T
+            {initial}
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium truncate">test</p>
-            <p className="text-xs text-ios-gray truncate">test@gmail.com</p>
+            <p className="text-sm font-medium truncate">{name}</p>
+            <p className="text-xs text-ios-gray truncate">{email}</p>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-ios-gray hover:bg-ios-bg dark:hover:bg-white/5 transition-colors"
+        >
+          <LogOut size={20} />
+          Выйти
+        </button>
       </div>
     </aside>
   );
