@@ -1,0 +1,21 @@
+"use client";
+import { m } from "framer-motion";
+
+export const MotionMain = m("main");
+export const MotionDiv = m("div");
+export const MotionButton = m("button");
+export const MotionSpan = m("span");
+export const MotionH1 = m("h1");
+export const MotionH2 = m("h2");
+export const MotionH3 = m("h3");
+export const MotionP = m("p");
+export const MotionSvg = m("svg");
+export const MotionCircle = m("circle");
+export const MotionLine = m("line");
+export const MotionPolyline = m("polyline");
+export const MotionPath = m("path");
+export const MotionForm = m("form");
+export const MotionInput = m("input");
+export const MotionLabel = m("label");
+export const MotionSection = m("section");
+export { AnimatePresence } from "framer-motion";

@@ -1,133 +1,76 @@
 "use client";
 
+import { AnimatePresence, MotionButton, MotionDiv, MotionForm, MotionP } from "@/components/motion";
+
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Clock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Clock, Mail, Lock, User, ArrowRight } from "lucide-react";
 
 export default function AuthPage() {
-  const [tab, setTab] = useState<"login" | "register">("register");
-  const [name, setName] = useState("");
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
   const supabase = createClient();
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    if (tab === "register") {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { name } },
-      });
+    setLoading(true); setError("");
+    if (isLogin) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
       else router.push("/");
     } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) setError(error.message);
-      else router.push("/");
+      const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+      if (signUpError || !data.user) { setError(signUpError?.message || "Ошибка регистрации"); setLoading(false); return; }
+      await supabase.from("profiles").insert({ user_id: data.user.id, name: name || email.split("@")[0], email });
+      router.push("/");
     }
     setLoading(false);
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-ios-bg dark:bg-ios-dark">
-      <div className="w-16 h-16 rounded-2xl bg-black dark:bg-white flex items-center justify-center mb-4">
-        <Clock size={32} className="text-white dark:text-black" />
-      </div>
-      <h1 className="text-3xl font-bold mb-1">TimeSync</h1>
-      <p className="text-ios-gray mb-8">Продуктивность и фокус</p>
-
-      <div className="w-full max-w-sm bg-white dark:bg-ios-card-dark rounded-3xl p-6 shadow-sm border border-ios-separator/30">
-        {/* Табы */}
-        <div className="flex bg-ios-bg dark:bg-white/5 rounded-xl p-1 mb-6">
-          <button
-            onClick={() => setTab("login")}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-              tab === "login"
-                ? "bg-white dark:bg-ios-card-dark shadow-sm text-black dark:text-white"
-                : "text-ios-gray"
-            }`}
-          >
-            Вход
-          </button>
-          <button
-            onClick={() => setTab("register")}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-              tab === "register"
-                ? "bg-white dark:bg-ios-card-dark shadow-sm text-black dark:text-white"
-                : "text-ios-gray"
-            }`}
-          >
-            Регистрация
-          </button>
+    <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-ios-bg dark:bg-ios-dark flex flex-col items-center justify-center p-4">
+      <MotionDiv initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", damping: 20 }} className="w-full max-w-sm space-y-6">
+        <div className="flex flex-col items-center gap-3">
+          <MotionDiv initial={{ rotate: -10 }} animate={{ rotate: 0 }} transition={{ type: "spring" }} className="w-16 h-16 rounded-2xl bg-black dark:bg-white flex items-center justify-center">
+            <Clock size={32} className="text-white dark:text-black" />
+          </MotionDiv>
+          <h1 className="text-2xl font-bold">TimeSync</h1>
+          <p className="text-ios-gray text-sm">Продуктивность и фокус</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {tab === "register" && (
-            <div>
-              <label className="text-xs font-medium text-ios-gray uppercase tracking-wider mb-1.5 block">
-                Имя
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ваше имя"
-                className="w-full px-4 py-3 rounded-xl bg-ios-bg dark:bg-white/5 border-0 text-base focus:ring-2 focus:ring-black dark:focus:ring-white outline-none placeholder:text-ios-gray/60"
-              />
+        <AnimatePresence mode="wait">
+          <MotionForm key={isLogin ? "login" : "register"} initial={{ x: isLogin ? -20 : 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: isLogin ? 20 : -20, opacity: 0 }} transition={{ duration: 0.2 }} onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <MotionDiv initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-ios-gray" size={18} />
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Имя" className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-ios-card-dark border-0 text-base outline-none placeholder:text-ios-gray/60 shadow-sm" />
+              </MotionDiv>
+            )}
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-ios-gray" size={18} />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-ios-card-dark border-0 text-base outline-none placeholder:text-ios-gray/60 shadow-sm" />
             </div>
-          )}
-          <div>
-            <label className="text-xs font-medium text-ios-gray uppercase tracking-wider mb-1.5 block">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-4 py-3 rounded-xl bg-ios-bg dark:bg-white/5 border-0 text-base focus:ring-2 focus:ring-black dark:focus:ring-white outline-none placeholder:text-ios-gray/60"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-ios-gray uppercase tracking-wider mb-1.5 block">
-              Пароль
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Минимум 6 символов"
-              minLength={6}
-              className="w-full px-4 py-3 rounded-xl bg-ios-bg dark:bg-white/5 border-0 text-base focus:ring-2 focus:ring-black dark:focus:ring-white outline-none placeholder:text-ios-gray/60"
-            />
-          </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ios-gray" size={18} />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Пароль" required minLength={6} className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-ios-card-dark border-0 text-base outline-none placeholder:text-ios-gray/60 shadow-sm" />
+            </div>
+            {error && <MotionP initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-brand-red text-sm text-center">{error}</MotionP>}
+            <MotionButton whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3.5 rounded-xl text-base font-medium flex items-center justify-center gap-2 disabled:opacity-50">
+              {loading ? "Загрузка..." : isLogin ? "Войти" : "Зарегистрироваться"} <ArrowRight size={18} />
+            </MotionButton>
+          </MotionForm>
+        </AnimatePresence>
 
-          {error && <p className="text-brand-red text-sm">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black dark:bg-white text-white dark:text-black py-3.5 rounded-xl text-base font-medium disabled:opacity-50"
-          >
-            {loading
-              ? "Загрузка..."
-              : tab === "register"
-              ? "Создать аккаунт"
-              : "Войти"}
-          </button>
-        </form>
-      </div>
-    </div>
+        <MotionButton whileTap={{ scale: 0.98 }} onClick={() => { setIsLogin(!isLogin); setError(""); }} className="w-full text-center text-sm text-ios-gray py-2">
+          {isLogin ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
+        </MotionButton>
+      </MotionDiv>
+    </MotionDiv>
   );
 }
