@@ -20,7 +20,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const { profile, loading } = useUser();
+  const { profile } = useUser();
 
   async function handleLogout() {
     await supabase.auth.signOut();

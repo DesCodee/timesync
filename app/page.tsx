@@ -99,8 +99,8 @@ export default function TodayPage() {
 
     setTasks(td || []);
     setMeetings(md || []);
-    setHabits((hd || []).map((h: any) => ({ ...h, logs: h.habit_logs || [] })));
-    setFocusMin((fd || []).reduce((sum: number, s: any) => sum + (s.actual_duration_min || 0), 0));
+    setHabits((hd || []).map((h: { id: string; name: string; color: string; habit_logs?: { completed_date: string }[] }) => ({ ...h, logs: h.habit_logs || [] })));
+    setFocusMin((fd || []).reduce((sum: number, s: { actual_duration_min?: number }) => sum + (s.actual_duration_min || 0), 0));
     setLoading(false);
   }
 
@@ -171,21 +171,25 @@ export default function TodayPage() {
   }
 
   function habitStreak(logs: { completed_date: string }[]) {
-    const dates = [...new Set(logs.map((l) => l.completed_date))].sort();
+    const dates = Array.from(new Set(logs.map((l) => l.completed_date))).sort();
     if (dates.length === 0) return 0;
     let streak = 0;
     const today = todayISO();
     const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
     const yestStr = yesterday.toISOString().split("T")[0];
-    let check = dates.includes(today) ? today : dates.includes(yestStr) ? yestStr : null;
-    if (!check) return 0;
-    while (true) {
-      if (dates.includes(check)) {
-        streak++;
-        const d = new Date(check);
-        d.setDate(d.getDate() - 1);
-        check = d.toISOString().split("T")[0];
-      } else break;
+    let current: string;
+    if (dates.includes(today)) {
+      current = today;
+    } else if (dates.includes(yestStr)) {
+      current = yestStr;
+    } else {
+      return 0;
+    }
+    while (dates.includes(current)) {
+      streak++;
+      const d = new Date(current);
+      d.setDate(d.getDate() - 1);
+      current = d.toISOString().split("T")[0];
     }
     return streak;
   }

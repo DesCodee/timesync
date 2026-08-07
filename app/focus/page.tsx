@@ -17,11 +17,24 @@ const PRESETS = {
 };
 
 type Mode = "work" | "break" | "longBreak";
+type PresetKey = keyof typeof PRESETS;
 
 const STORAGE_KEY = "timesync-timer";
 
+interface TimerState {
+  preset: PresetKey;
+  mode: Mode;
+  timeLeft: number;
+  isRunning: boolean;
+  sessionsDone: number;
+  selectedTask: string | null;
+  sessionId: string | null;
+  endTime: number;
+  startTime: number;
+}
+
 export default function FocusPage() {
-  const [preset, setPreset] = useState<keyof typeof PRESETS>("25/5");
+  const [preset, setPreset] = useState<PresetKey>("25/5");
   const [mode, setMode] = useState<Mode>("work");
   const [timeLeft, setTimeLeft] = useState(PRESETS["25/5"].work * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -45,7 +58,6 @@ export default function FocusPage() {
   const circumference = 2 * Math.PI * 120;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
-  // Загрузка активных задач
   useEffect(() => {
     if (!user) return;
     supabase
@@ -57,12 +69,11 @@ export default function FocusPage() {
       .then(({ data }) => setTasks(data || []));
   }, [user]);
 
-  // Восстановление таймера из localStorage при загрузке
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        const state = JSON.parse(saved);
+        const state: TimerState = JSON.parse(saved);
         const now = Date.now();
         if (state.isRunning && state.endTime > now) {
           setPreset(state.preset);
@@ -74,14 +85,12 @@ export default function FocusPage() {
           endTimeRef.current = state.endTime;
           startTimeRef.current = state.startTime;
         } else if (state.isRunning && state.endTime <= now) {
-          // Таймер уже должен был закончиться
           handleCompleteFromState(state);
         }
-      } catch {}
+      } catch { /* ignore */ }
     }
   }, []);
 
-  // Сохранение состояния
   const saveState = useCallback(() => {
     localStorage.setItem(
       STORAGE_KEY,
@@ -103,10 +112,8 @@ export default function FocusPage() {
     saveState();
   }, [saveState]);
 
-  // Таймер — используем Date.now() вместо декремента
   useEffect(() => {
     if (!isRunning) return;
-
     const tick = () => {
       const now = Date.now();
       const remaining = Math.ceil((endTimeRef.current - now) / 1000);
@@ -117,16 +124,13 @@ export default function FocusPage() {
         setTimeLeft(remaining);
       }
     };
-
-    tick(); // сразу
-    intervalRef.current = setInterval(tick, 250); // 4 раза в сек для плавности
-
+    tick();
+    intervalRef.current = setInterval(tick, 250);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isRunning, preset, mode, sessionsDone]);
 
-  // Visibility change — когда возвращаемся на вкладку
   useEffect(() => {
     const handleVisibility = () => {
       if (!document.hidden && isRunning) {
@@ -150,7 +154,7 @@ export default function FocusPage() {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  const handleCompleteFromState = (state: any) => {
+  const handleCompleteFromState = (state: TimerState) => {
     setIsRunning(false);
     if (state.sessionId) {
       supabase.from("focus_sessions").update({ ended_at: new Date().toISOString() }).eq("id", state.sessionId);
@@ -177,7 +181,6 @@ export default function FocusPage() {
   const handleComplete = useCallback(() => {
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
-
     if (sessionId) {
       supabase
         .from("focus_sessions")
@@ -185,7 +188,6 @@ export default function FocusPage() {
         .eq("id", sessionId);
       setSessionId(null);
     }
-
     if (mode === "work") {
       const newSessions = sessionsDone + 1;
       setSessionsDone(newSessions);
@@ -211,7 +213,6 @@ export default function FocusPage() {
       endTimeRef.current = now + durationMs;
       startTimeRef.current = now;
       setIsRunning(true);
-
       if (mode === "work" && user) {
         const { data } = await supabase
           .from("focus_sessions")
@@ -266,7 +267,7 @@ export default function FocusPage() {
     localStorage.removeItem(STORAGE_KEY);
   }
 
-  function switchPreset(p: keyof typeof PRESETS) {
+  function switchPreset(p: PresetKey) {
     setPreset(p);
     setIsRunning(false);
     setMode("work");
@@ -284,7 +285,7 @@ export default function FocusPage() {
   return (
     <main className="p-4 flex flex-col items-center">
       <div className="flex gap-2 mb-8 mt-4">
-        {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map((p) => (
+        {(Object.keys(PRESETS) as PresetKey[]).map((p) => (
           <button
             key={p}
             onClick={() => switchPreset(p)}
@@ -303,15 +304,8 @@ export default function FocusPage() {
         <svg className="w-full h-full -rotate-90" viewBox="0 0 260 260">
           <circle cx="130" cy="130" r="120" fill="none" stroke="#E5E5EA" strokeWidth="8" />
           <circle
-            cx="130"
-            cy="130"
-            r="120"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
+            cx="130" cy="130" r="120" fill="none" stroke="currentColor" strokeWidth="8"
+            strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
             className="text-black dark:text-white transition-all duration-300"
           />
         </svg>
@@ -323,63 +317,37 @@ export default function FocusPage() {
 
       <div className="flex items-center gap-2 mb-8">
         {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              i < sessionsDone ? "bg-black dark:bg-white" : "bg-ios-separator"
-            }`}
-          />
+          <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${i < sessionsDone ? "bg-black dark:bg-white" : "bg-ios-separator"}`} />
         ))}
         <span className="text-sm text-ios-gray ml-2">{sessionsDone}/4 сессий</span>
       </div>
 
       <div className="flex items-center gap-6 mb-10">
-        <button
-          onClick={resetTimer}
-          className="w-14 h-14 rounded-full bg-white dark:bg-ios-card-dark flex items-center justify-center shadow-sm border border-ios-separator/30"
-        >
+        <button onClick={resetTimer} className="w-14 h-14 rounded-full bg-white dark:bg-ios-card-dark flex items-center justify-center shadow-sm border border-ios-separator/30">
           <RotateCcw size={22} />
         </button>
-        <button
-          onClick={toggleTimer}
-          className="w-20 h-20 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shadow-lg"
-        >
+        <button onClick={toggleTimer} className="w-20 h-20 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shadow-lg">
           {isRunning ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
         </button>
-        <button
-          onClick={stopTimer}
-          className="w-14 h-14 rounded-full bg-white dark:bg-ios-card-dark flex items-center justify-center shadow-sm border border-ios-separator/30"
-        >
+        <button onClick={stopTimer} className="w-14 h-14 rounded-full bg-white dark:bg-ios-card-dark flex items-center justify-center shadow-sm border border-ios-separator/30">
           <Square size={22} fill="currentColor" />
         </button>
       </div>
 
       <div className="w-full max-w-sm">
         <p className="text-xs font-medium text-ios-gray uppercase tracking-wider mb-2">Текущая задача</p>
-        <button
-          onClick={() => setShowTaskSelect(!showTaskSelect)}
-          className="w-full bg-white dark:bg-ios-card-dark rounded-2xl px-4 py-3 shadow-sm border border-ios-separator/30 flex items-center justify-between text-left"
-        >
+        <button onClick={() => setShowTaskSelect(!showTaskSelect)} className="w-full bg-white dark:bg-ios-card-dark rounded-2xl px-4 py-3 shadow-sm border border-ios-separator/30 flex items-center justify-between text-left">
           <span className={selectedTask ? "text-base font-medium" : "text-ios-gray"}>
             {tasks.find((t) => t.id === selectedTask)?.title || "Выберите задачу..."}
           </span>
           <ChevronDown size={18} className={`text-ios-gray transition-transform ${showTaskSelect ? "rotate-180" : ""}`} />
         </button>
-
         {showTaskSelect && (
           <div className="mt-2 bg-white dark:bg-ios-card-dark rounded-2xl shadow-sm border border-ios-separator/30 overflow-hidden">
             {tasks.length === 0 && <div className="px-4 py-3 text-ios-gray text-sm">Нет активных задач</div>}
             {tasks.map((task) => (
-              <button
-                key={task.id}
-                onClick={() => {
-                  setSelectedTask(task.id);
-                  setShowTaskSelect(false);
-                }}
-                className={`w-full px-4 py-3 text-left text-sm hover:bg-ios-bg dark:hover:bg-white/5 transition-colors ${
-                  selectedTask === task.id ? "font-medium bg-ios-bg dark:bg-white/5" : ""
-                }`}
-              >
+              <button key={task.id} onClick={() => { setSelectedTask(task.id); setShowTaskSelect(false); }}
+                className={`w-full px-4 py-3 text-left text-sm hover:bg-ios-bg dark:hover:bg-white/5 transition-colors ${selectedTask === task.id ? "font-medium bg-ios-bg dark:bg-white/5" : ""}`}>
                 {task.title}
               </button>
             ))}
