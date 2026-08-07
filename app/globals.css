@@ -1,59 +1,36 @@
-@tailwind base;
+
+import os
+
+os.makedirs("/mnt/agents/output/timesync-final/app", exist_ok=True)
+os.makedirs("/mnt/agents/output/timesync-final/lib", exist_ok=True)
+
+# 1. globals.css — добавляем анимации
+globals_css = """@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ios-bg: #F2F2F7;
+  --ios-card: #FFFFFF;
+  --ios-dark: #000000;
+  --ios-card-dark: #1C1C1E;
+  --ios-gray: #8E8E93;
+  --ios-separator: #C6C6C8;
+  --brand-green: #34C759;
+  --brand-red: #FF3B30;
+  --brand-orange: #FF9500;
+  --brand-blue: #007AFF;
+  --brand-purple: #AF52DE;
+}
+
 @layer base {
-  :root {
-    --background: 240 6% 96%;
-    --foreground: 0 0% 0%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 0 0% 0%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 240 5% 96%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 0 0% 0%;
-    --radius: 1rem;
-  }
-
-  .dark {
-    --background: 240 6% 11%;
-    --foreground: 0 0% 100%;
-    --card: 240 5% 17%;
-    --card-foreground: 0 0% 100%;
-    --popover: 240 5% 17%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 4% 20%;
-    --input: 240 4% 20%;
-    --ring: 0 0% 100%;
-  }
-
-  * {
-    @apply border-border;
-  }
-
   body {
-    @apply bg-ios-bg text-foreground antialiased;
+    background-color: var(--ios-bg);
+    color: #000;
+  }
+  .dark body {
+    background-color: var(--ios-dark);
+    color: #fff;
   }
 }
 
@@ -86,9 +63,30 @@
 .animate-scale-in { animation: scaleIn 0.3s ease-out both; }
 .animate-check { animation: checkPop 0.25s ease-out both; }
 
-/* Stagger delays */
-.delay-100 { animation-delay: 0.05s; }
-.delay-200 { animation-delay: 0.1s; }
-.delay-300 { animation-delay: 0.15s; }
-.delay-400 { animation-delay: 0.2s; }
-.delay-500 { animation-delay: 0.25s; }
+/* Stagger delays via inline styles or utility classes */
+.delay-1 { animation-delay: 0.04s; }
+.delay-2 { animation-delay: 0.08s; }
+.delay-3 { animation-delay: 0.12s; }
+.delay-4 { animation-delay: 0.16s; }
+.delay-5 { animation-delay: 0.20s; }
+.delay-6 { animation-delay: 0.24s; }
+"""
+
+with open("/mnt/agents/output/timesync-final/app/globals.css", "w") as f:
+    f.write(globals_css)
+
+# 2. lib/anim.ts
+anim_ts = """export function cls(...classes: (string | false | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+export function anim(base: string, index?: number) {
+  const delay = index !== undefined && index > 0 ? ` delay-${Math.min(index + 1, 6)}` : "";
+  return `${base}${delay}`;
+}
+"""
+
+with open("/mnt/agents/output/timesync-final/lib/anim.ts", "w") as f:
+    f.write(anim_ts)
+
+print("globals.css + anim.ts done")
