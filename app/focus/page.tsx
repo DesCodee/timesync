@@ -18,6 +18,8 @@ const PRESETS = {
 
 type Mode = "work" | "break" | "longBreak";
 
+const STORAGE_KEY = "timesync-timer";
+
 export default function FocusPage() {
   const [preset, setPreset] = useState<keyof typeof PRESETS>("25/5");
   const [mode, setMode] = useState<Mode>("work");
@@ -32,6 +34,7 @@ export default function FocusPage() {
   const { user } = useUser();
   const supabase = createClient();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const endTimeRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
 
   const currentPreset = PRESETS[preset];
@@ -54,25 +57,92 @@ export default function FocusPage() {
       .then(({ data }) => setTasks(data || []));
   }, [user]);
 
-  // Таймер
+  // Восстановление таймера из localStorage при загрузке
   useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        const now = Date.now();
+        if (state.isRunning && state.endTime > now) {
+          setPreset(state.preset);
+          setMode(state.mode);
+          setSessionsDone(state.sessionsDone);
+          setSelectedTask(state.selectedTask);
+          setSessionId(state.sessionId);
+          setIsRunning(true);
+          endTimeRef.current = state.endTime;
+          startTimeRef.current = state.startTime;
+        } else if (state.isRunning && state.endTime <= now) {
+          // Таймер уже должен был закончиться
+          handleCompleteFromState(state);
+        }
+      } catch {}
     }
+  }, []);
+
+  // Сохранение состояния
+  const saveState = useCallback(() => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        preset,
+        mode,
+        timeLeft,
+        isRunning,
+        sessionsDone,
+        selectedTask,
+        sessionId,
+        endTime: endTimeRef.current,
+        startTime: startTimeRef.current,
+      })
+    );
+  }, [preset, mode, timeLeft, isRunning, sessionsDone, selectedTask, sessionId]);
+
+  useEffect(() => {
+    saveState();
+  }, [saveState]);
+
+  // Таймер — используем Date.now() вместо декремента
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const tick = () => {
+      const now = Date.now();
+      const remaining = Math.ceil((endTimeRef.current - now) / 1000);
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        handleComplete();
+      } else {
+        setTimeLeft(remaining);
+      }
+    };
+
+    tick(); // сразу
+    intervalRef.current = setInterval(tick, 250); // 4 раза в сек для плавности
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, timeLeft]);
+  }, [isRunning, preset, mode, sessionsDone]);
+
+  // Visibility change — когда возвращаемся на вкладку
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden && isRunning) {
+        const now = Date.now();
+        const remaining = Math.ceil((endTimeRef.current - now) / 1000);
+        if (remaining <= 0) {
+          setTimeLeft(0);
+          handleComplete();
+        } else {
+          setTimeLeft(remaining);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [isRunning]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -80,16 +150,38 @@ export default function FocusPage() {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
+  const handleCompleteFromState = (state: any) => {
+    setIsRunning(false);
+    if (state.sessionId) {
+      supabase.from("focus_sessions").update({ ended_at: new Date().toISOString() }).eq("id", state.sessionId);
+      setSessionId(null);
+    }
+    if (state.mode === "work") {
+      const newSessions = state.sessionsDone + 1;
+      setSessionsDone(newSessions);
+      if (newSessions >= 4) {
+        setMode("longBreak");
+        setTimeLeft(PRESETS[state.preset].longBreak * 60);
+        setSessionsDone(0);
+      } else {
+        setMode("break");
+        setTimeLeft(PRESETS[state.preset].break * 60);
+      }
+    } else {
+      setMode("work");
+      setTimeLeft(PRESETS[state.preset].work * 60);
+    }
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
   const handleComplete = useCallback(() => {
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    // Обновляем сессию в БД
     if (sessionId) {
-      const actualMin = Math.round((totalTime * 60 - timeLeft) / 60);
       supabase
         .from("focus_sessions")
-        .update({ ended_at: new Date().toISOString(), actual_duration_min: actualMin || 1 })
+        .update({ ended_at: new Date().toISOString(), actual_duration_min: totalTime })
         .eq("id", sessionId);
       setSessionId(null);
     }
@@ -109,13 +201,16 @@ export default function FocusPage() {
       setMode("work");
       setTimeLeft(currentPreset.work * 60);
     }
-  }, [mode, sessionsDone, sessionId, totalTime, timeLeft, currentPreset]);
+    localStorage.removeItem(STORAGE_KEY);
+  }, [mode, sessionsDone, sessionId, totalTime, currentPreset]);
 
   async function toggleTimer() {
     if (!isRunning) {
-      // Старт
+      const now = Date.now();
+      const durationMs = timeLeft * 1000;
+      endTimeRef.current = now + durationMs;
+      startTimeRef.current = now;
       setIsRunning(true);
-      startTimeRef.current = Date.now();
 
       if (mode === "work" && user) {
         const { data } = await supabase
@@ -123,7 +218,7 @@ export default function FocusPage() {
           .insert({
             user_id: user.id,
             task_id: selectedTask,
-            duration_min: currentPreset.work,
+            duration_min: totalTime,
             session_type: "work",
             started_at: new Date().toISOString(),
           })
@@ -132,15 +227,12 @@ export default function FocusPage() {
         if (data) setSessionId(data.id);
       }
     } else {
-      // Пауза
       setIsRunning(false);
+      const elapsed = Math.round((Date.now() - startTimeRef.current) / 60000);
       if (sessionId) {
-        const actualMin = Math.round((Date.now() - startTimeRef.current) / 60000);
-        supabase
-          .from("focus_sessions")
-          .update({ actual_duration_min: actualMin || 1 })
-          .eq("id", sessionId);
+        supabase.from("focus_sessions").update({ actual_duration_min: elapsed || 1 }).eq("id", sessionId);
       }
+      setTimeLeft(Math.ceil((endTimeRef.current - Date.now()) / 1000));
     }
   }
 
@@ -148,16 +240,17 @@ export default function FocusPage() {
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (sessionId) {
-      const actualMin = Math.round((Date.now() - startTimeRef.current) / 60000);
+      const elapsed = Math.round((Date.now() - startTimeRef.current) / 60000);
       supabase
         .from("focus_sessions")
-        .update({ ended_at: new Date().toISOString(), actual_duration_min: actualMin || 1 })
+        .update({ ended_at: new Date().toISOString(), actual_duration_min: elapsed || 1 })
         .eq("id", sessionId);
       setSessionId(null);
     }
     setMode("work");
     setTimeLeft(currentPreset.work * 60);
     setSessionsDone(0);
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   function resetTimer() {
@@ -170,6 +263,7 @@ export default function FocusPage() {
       supabase.from("focus_sessions").update({ ended_at: new Date().toISOString() }).eq("id", sessionId);
       setSessionId(null);
     }
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   function switchPreset(p: keyof typeof PRESETS) {
@@ -182,13 +276,13 @@ export default function FocusPage() {
       supabase.from("focus_sessions").update({ ended_at: new Date().toISOString() }).eq("id", sessionId);
       setSessionId(null);
     }
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   const modeLabel = mode === "work" ? "РАБОТА" : mode === "break" ? "ПЕРЕРЫВ" : "ДЛИННЫЙ ПЕРЕРЫВ";
 
   return (
     <main className="p-4 flex flex-col items-center">
-      {/* Пресеты */}
       <div className="flex gap-2 mb-8 mt-4">
         {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map((p) => (
           <button
@@ -205,7 +299,6 @@ export default function FocusPage() {
         ))}
       </div>
 
-      {/* Круглый таймер */}
       <div className="relative w-72 h-72 mb-6">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 260 260">
           <circle cx="130" cy="130" r="120" fill="none" stroke="#E5E5EA" strokeWidth="8" />
@@ -219,7 +312,7 @@ export default function FocusPage() {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
-            className="text-black dark:text-white transition-all duration-1000 ease-linear"
+            className="text-black dark:text-white transition-all duration-300"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -228,7 +321,6 @@ export default function FocusPage() {
         </div>
       </div>
 
-      {/* Сессии */}
       <div className="flex items-center gap-2 mb-8">
         {[0, 1, 2, 3].map((i) => (
           <div
@@ -241,7 +333,6 @@ export default function FocusPage() {
         <span className="text-sm text-ios-gray ml-2">{sessionsDone}/4 сессий</span>
       </div>
 
-      {/* Управление */}
       <div className="flex items-center gap-6 mb-10">
         <button
           onClick={resetTimer}
@@ -263,7 +354,6 @@ export default function FocusPage() {
         </button>
       </div>
 
-      {/* Текущая задача */}
       <div className="w-full max-w-sm">
         <p className="text-xs font-medium text-ios-gray uppercase tracking-wider mb-2">Текущая задача</p>
         <button
@@ -278,9 +368,7 @@ export default function FocusPage() {
 
         {showTaskSelect && (
           <div className="mt-2 bg-white dark:bg-ios-card-dark rounded-2xl shadow-sm border border-ios-separator/30 overflow-hidden">
-            {tasks.length === 0 && (
-              <div className="px-4 py-3 text-ios-gray text-sm">Нет активных задач</div>
-            )}
+            {tasks.length === 0 && <div className="px-4 py-3 text-ios-gray text-sm">Нет активных задач</div>}
             {tasks.map((task) => (
               <button
                 key={task.id}
