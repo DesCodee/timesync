@@ -23,7 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   }, []);
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) navigator.register('/sw.js').catch(()=>{});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
     const head = document.head;
     const addMeta = (name: string, content: string) => {
       if (!head.querySelector(`meta[name="${name}"]`)) {
