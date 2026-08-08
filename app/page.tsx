@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import { Check, Plus, X, Trash2 } from "lucide-react";
 import { anim } from "@/lib/anim";
+import { useToast } from "@/lib/toast";
+import { SkeletonWidget, SkeletonCard } from "@/components/skeletons";
 
 type Task = { id: string; title: string; is_completed: boolean; is_mit: boolean; due_date: string | null; };
 type Meeting = { id: string; title: string; start_time: string; end_time: string; color: string; };
@@ -18,6 +20,7 @@ const greeting = () => { const h = new Date().getHours(); if (h < 12) return "Д
 export default function TodayPage() {
   const { user, profile } = useUser();
   const supabase = createClient();
+  const { showToast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -57,36 +60,43 @@ export default function TodayPage() {
 
   async function toggleTask(id: string, done: boolean) {
     await supabase.from("tasks").update({ is_completed: !done, completed_at: !done ? new Date().toISOString() : null }).eq("id", id);
+    showToast(!done ? "Задача выполнена!" : "Задача возвращена", "success");
     fetchData();
   }
   async function setMit(id: string) {
     await supabase.from("tasks").update({ is_mit: false }).eq("user_id", user!.id);
     await supabase.from("tasks").update({ is_mit: true }).eq("id", id);
+    showToast("MIT назначен", "success");
     fetchData();
   }
   async function toggleHabit(habitId: string, date: string) {
     const habit = habits.find((h) => h.id === habitId);
     const hasLog = habit?.logs.some((l) => l.completed_date === date);
-    if (hasLog) { await supabase.from("habit_logs").delete().eq("habit_id", habitId).eq("completed_date", date); }
-    else { await supabase.from("habit_logs").insert({ habit_id: habitId, user_id: user!.id, completed_date: date }); }
+    if (hasLog) { await supabase.from("habit_logs").delete().eq("habit_id", habitId).eq("completed_date", date); showToast("Привычка отменена", "info"); }
+    else { await supabase.from("habit_logs").insert({ habit_id: habitId, user_id: user!.id, completed_date: date }); showToast("Привычка выполнена!", "success"); }
     fetchData();
   }
   async function deleteHabit(id: string) {
-    if (!confirm("Удалить привычку?")) return;
+    if (!window.confirm("Удалить привычку?")) return;
     await supabase.from("habits").delete().eq("id", id);
+    showToast("Привычка удалена", "info");
     fetchData();
   }
   async function addMeeting(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !mTitle || !mStart || !mEnd) return;
     await supabase.from("meetings").insert({ user_id: user.id, title: mTitle, start_time: new Date(mStart).toISOString(), end_time: new Date(mEnd).toISOString(), color: "#FF3B30" });
-    setMTitle(""); setMStart(""); setMEnd(""); setShowMeetingModal(false); fetchData();
+    setMTitle(""); setMStart(""); setMEnd(""); setShowMeetingModal(false);
+    showToast("Встреча добавлена", "success");
+    fetchData();
   }
   async function addHabit(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !hName) return;
     await supabase.from("habits").insert({ user_id: user.id, name: hName, color: "#34C759" });
-    setHName(""); setShowHabitModal(false); fetchData();
+    setHName(""); setShowHabitModal(false);
+    showToast("Привычка создана", "success");
+    fetchData();
   }
   function meetingDuration(m: Meeting) {
     const s = new Date(m.start_time); const e = new Date(m.end_time);
@@ -104,8 +114,30 @@ export default function TodayPage() {
     return streak;
   }
   const maxStreak = useMemo(() => Math.max(0, ...habits.map((h) => habitStreak(h.logs))), [habits]);
-  if (!mounted) return <div className="p-4">Загрузка...</div>;
-  if (loading) return <div className="p-4">Загрузка...</div>;
+
+  if (!mounted) return (
+    <main className="p-4 space-y-4">
+      <div className="skeleton h-8 w-48 mb-2" />
+      <div className="grid grid-cols-2 gap-3">
+        {[0,1,2,3].map((i) => <SkeletonWidget key={i} />)}
+      </div>
+      <SkeletonCard lines={3} />
+      <SkeletonCard lines={2} />
+      <SkeletonCard lines={2} />
+    </main>
+  );
+
+  if (loading) return (
+    <main className="p-4 space-y-4">
+      <div className="skeleton h-8 w-48 mb-2" />
+      <div className="grid grid-cols-2 gap-3">
+        {[0,1,2,3].map((i) => <SkeletonWidget key={i} />)}
+      </div>
+      <SkeletonCard lines={3} />
+      <SkeletonCard lines={2} />
+      <SkeletonCard lines={2} />
+    </main>
+  );
 
   return (
     <main className="p-4 space-y-4">

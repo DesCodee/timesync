@@ -61,3 +61,20 @@
 .delay-4 { animation-delay: 0.16s; }
 .delay-5 { animation-delay: 0.20s; }
 .delay-6 { animation-delay: 0.24s; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #E5E5EA 25%, #F2F2F7 50%, #E5E5EA 75%);
+  background-size: 200% 100%;
+  animation: pulse 1.5s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #2C2C2E 25%, #3A3A3C 50%, #2C2C2E 75%);
+  background-size: 200% 100%;
+}
