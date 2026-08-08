@@ -38,17 +38,20 @@ export default function Dashboard() {
   async function fetchData() {
     if (!user) return;
     const t = todayISO();
-    const [{ data: td }, { data: md }, { data: hd }, { data: fd }] = await Promise.all([
-      supabase.from("tasks").select("id, title, is_completed, is_mit, due_date").eq("user_id", user.id),
-      supabase.from("meetings").select("id, title, start_time, end_time, color").eq("user_id", user.id).gte("start_time", `${t}T00:00:00`).lte("start_time", `${t}T23:59:59`).order("start_time"),
-      supabase.from("habits").select("id, name, color, habit_logs(completed_date)").eq("user_id", user.id),
-      supabase.from("focus_sessions").select("actual_duration_min").eq("user_id", user.id).gte("started_at", `${t}T00:00:00`).lte("started_at", `${t}T23:59:59`),
-    ]);
-    setTasks(td || []);
-    setMeetings(md || []);
-    setHabits((hd || []).map((h: any) => ({ ...h, logs: h.habit_logs || [] })));
-    setFocusMin((fd || []).reduce((sum: number, s: any) => sum + (s.actual_duration_min || 0), 0));
-    } catch { showToast("Ошибка сети, показаны сохранённые данные", "error"); }
+    try {
+      const [{ data: td }, { data: md }, { data: hd }, { data: fd }] = await Promise.all([
+        supabase.from("tasks").select("id, title, is_completed, is_mit, due_date").eq("user_id", user.id),
+        supabase.from("meetings").select("id, title, start_time, end_time, color").eq("user_id", user.id).gte("start_time", `${t}T00:00:00`).lte("start_time", `${t}T23:59:59`).order("start_time"),
+        supabase.from("habits").select("id, name, color, habit_logs(completed_date)").eq("user_id", user.id),
+        supabase.from("focus_sessions").select("actual_duration_min").eq("user_id", user.id).gte("started_at", `${t}T00:00:00`).lte("started_at", `${t}T23:59:59`),
+      ]);
+      setTasks(td || []);
+      setMeetings(md || []);
+      setHabits((hd || []).map((h: any) => ({ ...h, logs: h.habit_logs || [] })));
+      setFocusMin((fd || []).reduce((sum: number, s: any) => sum + (s.actual_duration_min || 0), 0));
+    } catch {
+      showToast("Ошибка сети, показаны сохранённые данные", "error");
+    }
     setLoading(false);
   }
   useEffect(() => { if (user) fetchData(); }, [user]);
