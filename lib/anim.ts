@@ -1,4 +1,8 @@
-export function animClass(base: string, index?: number) {
-  const delay = index !== undefined ? ` delay-${Math.min((index + 1) * 100, 500)}` : "";
+export function cls(...classes: (string | false | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+export function anim(base: string, index?: number) {
+  const delay = index !== undefined && index > 0 ? ` delay-${Math.min(index + 1, 6)}` : "";
   return `${base}${delay}`;
 }

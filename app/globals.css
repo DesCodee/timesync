@@ -1,11 +1,4 @@
-
-import os
-
-os.makedirs("/mnt/agents/output/timesync-final/app", exist_ok=True)
-os.makedirs("/mnt/agents/output/timesync-final/lib", exist_ok=True)
-
-# 1. globals.css — добавляем анимации
-globals_css = """@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -34,7 +27,6 @@ globals_css = """@tailwind base;
   }
 }
 
-/* Animations */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
@@ -63,30 +55,9 @@ globals_css = """@tailwind base;
 .animate-scale-in { animation: scaleIn 0.3s ease-out both; }
 .animate-check { animation: checkPop 0.25s ease-out both; }
 
-/* Stagger delays via inline styles or utility classes */
 .delay-1 { animation-delay: 0.04s; }
 .delay-2 { animation-delay: 0.08s; }
 .delay-3 { animation-delay: 0.12s; }
 .delay-4 { animation-delay: 0.16s; }
 .delay-5 { animation-delay: 0.20s; }
 .delay-6 { animation-delay: 0.24s; }
-"""
-
-with open("/mnt/agents/output/timesync-final/app/globals.css", "w") as f:
-    f.write(globals_css)
-
-# 2. lib/anim.ts
-anim_ts = """export function cls(...classes: (string | false | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
-}
-
-export function anim(base: string, index?: number) {
-  const delay = index !== undefined && index > 0 ? ` delay-${Math.min(index + 1, 6)}` : "";
-  return `${base}${delay}`;
-}
-"""
-
-with open("/mnt/agents/output/timesync-final/lib/anim.ts", "w") as f:
-    f.write(anim_ts)
-
-print("globals.css + anim.ts done")
