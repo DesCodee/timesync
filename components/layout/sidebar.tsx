@@ -1,88 +1,48 @@
 "use client";
-
+import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Sun, CheckSquare, Clock, Folder, BarChart3, Settings, LogOut } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Home, CheckSquare, Clock, FolderKanban, BarChart3, Settings, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useUser } from "@/hooks/use-user";
-
-const navItems = [
-  { href: "/", label: "Сегодня", icon: Sun },
-  { href: "/tasks", label: "Задачи", icon: CheckSquare },
-  { href: "/focus", label: "Фокус", icon: Clock },
-  { href: "/projects", label: "Проекты", icon: Folder },
-  { href: "/analytics", label: "Аналитика", icon: BarChart3 },
-  { href: "/settings", label: "Настройки", icon: Settings },
-];
+import { useRouter } from "next/navigation";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const { profile } = useUser();
-
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/auth");
-    router.refresh();
-  }
-
-  const name = profile?.name || "User";
-  const email = profile?.email || "";
-  const initial = name.charAt(0).toUpperCase();
-
+  const { t } = useTranslation();
+  const items = [
+    { href: "/", icon: Home, label: t("nav", "today") },
+    { href: "/tasks", icon: CheckSquare, label: t("nav", "tasks") },
+    { href: "/focus", icon: Clock, label: t("nav", "focus") },
+    { href: "/projects", icon: FolderKanban, label: t("nav", "projects") },
+    { href: "/analytics", icon: BarChart3, label: t("nav", "analytics") },
+    { href: "/settings", icon: Settings, label: t("nav", "settings") },
+  ];
+  async function logout() { await supabase.auth.signOut(); router.push("/auth"); router.refresh(); }
   return (
-    <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-white dark:bg-ios-card-dark border-r border-ios-separator dark:border-white/10 z-50">
-      <div className="p-6">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-black dark:bg-white flex items-center justify-center">
-            <Clock size={18} className="text-white dark:text-black" />
-          </div>
-          <span className="text-xl font-bold">TimeSync</span>
+    <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-white dark:bg-ios-card-dark border-r border-ios-separator/30 flex-col p-4 z-40">
+      <div className="flex items-center gap-2 px-2 mb-8">
+        <div className="w-8 h-8 rounded-lg bg-black dark:bg-white flex items-center justify-center">
+          <Clock size={18} className="text-white dark:text-black" />
         </div>
-        <p className="text-xs text-ios-gray mt-1 ml-11">Продуктивность и фокус</p>
+        <span className="font-bold text-lg">TimeSync</span>
       </div>
-
-      <nav className="flex-1 px-4 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
+      <nav className="flex-1 space-y-1">
+        {items.map((item) => {
+          const active = pathname === item.href;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "text-ios-gray hover:bg-ios-bg dark:hover:bg-white/5"
-              )}
-            >
-              <item.icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+            <Link key={item.href} href={item.href} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${active ? "bg-ios-bg dark:bg-white/10 text-black dark:text-white" : "text-ios-gray hover:text-black dark:hover:text-white"}`}>
+              <item.icon size={18} strokeWidth={active ? 2.5 : 1.5} />
               {item.label}
             </Link>
           );
         })}
       </nav>
-
-      <div className="p-4 border-t border-ios-separator dark:border-white/10 space-y-1">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
-            {initial}
-          </div>
-          <div className="overflow-hidden">
-            <p className="text-sm font-medium truncate">{name}</p>
-            <p className="text-xs text-ios-gray truncate">{email}</p>
-          </div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-ios-gray hover:bg-ios-bg dark:hover:bg-white/5 transition-colors"
-        >
-          <LogOut size={20} />
-          Выйти
-        </button>
-      </div>
+      <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-ios-gray hover:text-brand-red transition-colors mt-auto">
+        <LogOut size={18} />
+        {t("nav", "logout")}
+      </button>
     </aside>
   );
 }

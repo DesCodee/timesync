@@ -1,13 +1,14 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useUser } from "@/hooks/use-user";
-import { Moon, Volume2, Smartphone, Bell, Eye, Info, Shield, FileText, RotateCcw, ChevronRight } from "lucide-react";
+import { Moon, Volume2, Smartphone, Bell, Eye, Info, Shield, FileText, RotateCcw, ChevronRight, Globe } from "lucide-react";
 import { anim } from "@/lib/anim";
 import { useToast } from "@/lib/toast";
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function SettingsPage() {
   const { profile, user, loading } = useUser();
+  const { t, lang, setLang } = useTranslation();
   const [theme, setTheme] = useState("system");
   const [timerPreset, setTimerPreset] = useState("25/5");
   const [sound, setSound] = useState(true);
@@ -35,24 +36,16 @@ export default function SettingsPage() {
     localStorage.setItem("timesync-theme", t);
     const root = document.documentElement;
     root.classList.remove("light", "dark");
-    if (t === "system") {
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) root.classList.add("dark");
-    } else root.classList.add(t);
+    if (t === "system") { if (window.matchMedia("(prefers-color-scheme: dark)").matches) root.classList.add("dark"); }
+    else root.classList.add(t);
   };
 
   async function handleReset() {
-    if (!window.confirm("Сбросить все настройки?")) return;
+    if (!window.confirm(t("settings", "resetConfirm"))) return;
     localStorage.clear();
-    setTheme("system");
-    setTimerPreset("25/5");
-    setSound(true);
-    setVibration(true);
-    setTimerNotif(true);
-    setMorningDigest(false);
-    setHabitRemind(false);
-    setShowCompleted(true);
+    setTheme("system"); setTimerPreset("25/5"); setSound(true); setVibration(true); setTimerNotif(true); setMorningDigest(false); setHabitRemind(false); setShowCompleted(true);
     handleTheme("system");
-    showToast("Настройки сброшены", "info");
+    showToast(t("settings", "reset"), "info");
   }
 
   if (loading) return (
@@ -91,45 +84,63 @@ export default function SettingsPage() {
 
   return (
     <main className="p-4">
-      <h1 className={anim("text-[28px] font-bold mb-6 animate-fade-up")}>Настройки</h1>
+      <h1 className={anim("text-[28px] font-bold mb-6 animate-fade-up")}>{t("settings", "title")}</h1>
       <div className={anim("animate-fade-up mb-6")}>
         <div className="bg-white dark:bg-ios-card-dark rounded-2xl p-4 shadow-sm flex items-center gap-3 border border-ios-separator/30">
           <div className="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center text-xl font-bold">{initial}</div>
           <div className="flex-1 min-w-0"><p className="text-base font-semibold">{name}</p><p className="text-sm text-ios-gray truncate">{email}</p></div>
         </div>
       </div>
-      <Section title="Внешний вид">
-        <Row icon={<Moon size={18} />} label="Тема" />
+
+      <Section title={t("settings", "appearance")}>
+        <Row icon={<Moon size={18} />} label={t("settings", "theme")} />
         <div className="px-4 pb-3"><div className="flex bg-ios-bg dark:bg-white/10 rounded-xl p-1">
-          {["Система", "Светлая", "Тёмная"].map((t) => {
-            const key = t === "Система" ? "system" : t === "Светлая" ? "light" : "dark";
-            return (<button key={t} onClick={() => handleTheme(key)} className={`flex-1 py-1.5 text-xs sm:text-sm rounded-lg transition-all ${theme === key ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{t}</button>);
+          {[t("settings", "system"), t("settings", "light"), t("settings", "dark")].map((label, idx) => {
+            const key = ["system", "light", "dark"][idx];
+            return (<button key={key} onClick={() => handleTheme(key)} className={`flex-1 py-1.5 text-xs sm:text-sm rounded-lg transition-all ${theme === key ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{label}</button>);
           })}
         </div></div>
       </Section>
-      <Section title="Помодоро таймер">
-        <Row icon={<span className="text-sm font-bold">⏱</span>} label="Режим" />
+
+      <Section title={t("settings", "language")}>
+        <Row icon={<Globe size={18} />} label={t("settings", "language")} />
+        <div className="px-4 pb-3"><div className="flex bg-ios-bg dark:bg-white/10 rounded-xl p-1">
+          {[
+            { key: "ru", label: t("settings", "langRu") },
+            { key: "en", label: t("settings", "langEn") }
+          ].map((l) => (
+            <button key={l.key} onClick={() => setLang(l.key as "ru" | "en")} className={`flex-1 py-1.5 text-xs sm:text-sm rounded-lg transition-all ${lang === l.key ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{l.label}</button>
+          ))}
+        </div></div>
+      </Section>
+
+      <Section title={t("settings", "timer")}>
+        <Row icon={<span className="text-sm font-bold">⏱</span>} label={t("settings", "mode")} />
         <div className="px-4 pb-3"><div className="flex bg-ios-bg dark:bg-white/10 rounded-xl p-1">
           {["25/5", "52/17", "90/20"].map((p) => (<button key={p} onClick={() => { setTimerPreset(p); updateStorage("timesync-timer-preset", p); }} className={`flex-1 py-1.5 text-xs sm:text-sm rounded-lg transition-all ${timerPreset === p ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{p}</button>))}
         </div></div>
       </Section>
-      <Section title="Звук и вибрация">
-        <Row icon={<Volume2 size={18} />} label="Звук таймера" desc="Звуковой сигнал по завершении" action={<Toggle value={sound} onChange={(v) => { setSound(v); updateStorage("timesync-sound", v); }} />} />
-        <Row icon={<Smartphone size={18} />} label="Вибрация" desc="Вибросигнал по завершении" action={<Toggle value={vibration} onChange={(v) => { setVibration(v); updateStorage("timesync-vibration", v); }} />} />
+
+      <Section title={t("settings", "soundVibro")}>
+        <Row icon={<Volume2 size={18} />} label={t("settings", "sound")} desc={t("settings", "soundDesc")} action={<Toggle value={sound} onChange={(v) => { setSound(v); updateStorage("timesync-sound", v); }} />} />
+        <Row icon={<Smartphone size={18} />} label={t("settings", "vibration")} desc={t("settings", "vibroDesc")} action={<Toggle value={vibration} onChange={(v) => { setVibration(v); updateStorage("timesync-vibration", v); }} />} />
       </Section>
-      <Section title="Уведомления">
-        <Row icon={<Bell size={18} />} label="Конец таймера" desc="Уведомление по завершении сессии" action={<Toggle value={timerNotif} onChange={(v) => { setTimerNotif(v); updateStorage("timesync-timer-notif", v); }} />} />
-        <Row icon={<span className="text-sm">☀️</span>} label="Утренний дайджест" desc="Напоминание о задачах на день" action={<Toggle value={morningDigest} onChange={(v) => { setMorningDigest(v); updateStorage("timesync-morning", v); }} />} />
-        <Row icon={<span className="text-sm">✓</span>} label="Привычки" desc="Напоминание отметить привычки" action={<Toggle value={habitRemind} onChange={(v) => { setHabitRemind(v); updateStorage("timesync-habit-remind", v); }} />} />
+
+      <Section title={t("settings", "notifications")}>
+        <Row icon={<Bell size={18} />} label={t("settings", "timerNotif")} desc={t("settings", "timerNotifDesc")} action={<Toggle value={timerNotif} onChange={(v) => { setTimerNotif(v); updateStorage("timesync-timer-notif", v); }} />} />
+        <Row icon={<span className="text-sm">☀️</span>} label={t("settings", "morning")} desc={t("settings", "morningDesc")} action={<Toggle value={morningDigest} onChange={(v) => { setMorningDigest(v); updateStorage("timesync-morning", v); }} />} />
+        <Row icon={<span className="text-sm">✓</span>} label={t("settings", "habits")} desc={t("settings", "habitsDesc")} action={<Toggle value={habitRemind} onChange={(v) => { setHabitRemind(v); updateStorage("timesync-habit-remind", v); }} />} />
       </Section>
-      <Section title="Задачи">
-        <Row icon={<Eye size={18} />} label="Показывать выполненные" desc="Отображать завершённые задачи в списке" action={<Toggle value={showCompleted} onChange={(v) => { setShowCompleted(v); updateStorage("timesync-show-completed", v); }} />} />
+
+      <Section title={t("settings", "tasks")}>
+        <Row icon={<Eye size={18} />} label={t("settings", "showCompleted")} desc={t("settings", "showCompletedDesc")} action={<Toggle value={showCompleted} onChange={(v) => { setShowCompleted(v); updateStorage("timesync-show-completed", v); }} />} />
       </Section>
-      <Section title="О приложении">
-        <Row icon={<Info size={18} />} label="Версия" action={<span className="text-ios-gray text-sm">1.0.0</span>} />
-        <Row icon={<Shield size={18} />} label="Политика конфиденциальности" onClick={() => {}} />
-        <Row icon={<FileText size={18} />} label="Условия использования" onClick={() => {}} />
-        <Row icon={<RotateCcw size={18} />} label="Сбросить настройки" desc="Вернуть стандартные значения" onClick={handleReset} />
+
+      <Section title={t("settings", "about")}>
+        <Row icon={<Info size={18} />} label={t("settings", "version")} action={<span className="text-ios-gray text-sm">1.0.0</span>} />
+        <Row icon={<Shield size={18} />} label={t("settings", "privacy")} onClick={() => {}} />
+        <Row icon={<FileText size={18} />} label={t("settings", "terms")} onClick={() => {}} />
+        <Row icon={<RotateCcw size={18} />} label={t("settings", "reset")} desc={t("settings", "resetDesc")} onClick={handleReset} />
       </Section>
     </main>
   );
