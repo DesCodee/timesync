@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Search, Star, Calendar, Pencil, Trash2, X } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { anim } from "@/lib/anim";
+import { useToast } from "@/lib/toast";
 
 type Task = { id: string; title: string; description: string | null; priority: string; work_type: string | null; due_date: string | null; is_mit: boolean; is_completed: boolean; completed_at: string | null; project_id: string | null; projects?: { name: string } | null; };
 type Project = { id: string; name: string };
@@ -22,6 +23,7 @@ export default function TasksPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const { user } = useUser();
   const supabase = createClient();
+  const { showToast } = useToast();
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState("medium");
   const [newWorkType, setNewWorkType] = useState("");
@@ -32,10 +34,36 @@ export default function TasksPage() {
   async function fetchTasks() { if (!user) return; const { data } = await supabase.from("tasks").select("*, projects(name)").eq("user_id", user.id).order("created_at", { ascending: false }); setTasks(data || []); setLoading(false); }
   async function fetchProjects() { if (!user) return; const { data } = await supabase.from("projects").select("id, name").eq("user_id", user.id); setProjects(data || []); }
   useEffect(() => { if (user) { fetchTasks(); fetchProjects(); } }, [user]);
-  async function toggleTask(id: string, current: boolean) { await supabase.from("tasks").update({ is_completed: !current, completed_at: !current ? new Date().toISOString() : null }).eq("id", id); fetchTasks(); }
-  async function createTask(e: React.FormEvent) { e.preventDefault(); if (!user || !newTitle.trim()) return; await supabase.from("tasks").insert({ user_id: user.id, title: newTitle, priority: newPriority, work_type: newWorkType || null, project_id: newProject || null, due_date: newDate || null, is_mit: newMit }); closeModal(); fetchTasks(); }
-  async function updateTask(e: React.FormEvent) { e.preventDefault(); if (!editId || !newTitle.trim()) return; await supabase.from("tasks").update({ title: newTitle, priority: newPriority, work_type: newWorkType || null, project_id: newProject || null, due_date: newDate || null, is_mit: newMit }).eq("id", editId); closeModal(); fetchTasks(); }
-  async function deleteTask(id: string) { if (!confirm("Удалить задачу?")) return; await supabase.from("tasks").delete().eq("id", id); fetchTasks(); }
+
+  async function toggleTask(id: string, current: boolean) {
+    await supabase.from("tasks").update({ is_completed: !current, completed_at: !current ? new Date().toISOString() : null }).eq("id", id);
+    showToast(!current ? "Задача выполнена!" : "Задача возвращена", "success");
+    fetchTasks();
+  }
+
+  async function createTask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !newTitle.trim()) return;
+    await supabase.from("tasks").insert({ user_id: user.id, title: newTitle, priority: newPriority, work_type: newWorkType || null, project_id: newProject || null, due_date: newDate || null, is_mit: newMit });
+    showToast("Задача создана", "success");
+    closeModal(); fetchTasks();
+  }
+
+  async function updateTask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editId || !newTitle.trim()) return;
+    await supabase.from("tasks").update({ title: newTitle, priority: newPriority, work_type: newWorkType || null, project_id: newProject || null, due_date: newDate || null, is_mit: newMit }).eq("id", editId);
+    showToast("Задача обновлена", "success");
+    closeModal(); fetchTasks();
+  }
+
+  async function deleteTask(id: string) {
+    if (!window.confirm("Удалить задачу?")) return;
+    await supabase.from("tasks").delete().eq("id", id);
+    showToast("Задача удалена", "info");
+    fetchTasks();
+  }
+
   function openEdit(task: Task) { setEditMode(true); setEditId(task.id); setNewTitle(task.title); setNewPriority(task.priority); setNewWorkType(task.work_type || ""); setNewProject(task.project_id || ""); setNewDate(task.due_date || ""); setNewMit(task.is_mit); setShowModal(true); }
   function openCreate() { setEditMode(false); setEditId(null); setNewTitle(""); setNewPriority("medium"); setNewWorkType(""); setNewProject(""); setNewDate(""); setNewMit(false); setShowModal(true); }
   function closeModal() { setShowModal(false); setEditMode(false); setEditId(null); }
