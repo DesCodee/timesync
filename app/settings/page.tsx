@@ -7,7 +7,7 @@ import { anim } from "@/lib/anim";
 import { useToast } from "@/lib/toast";
 
 export default function SettingsPage() {
-  const { profile, user } = useUser();
+  const { profile, user, loading } = useUser();
   const [theme, setTheme] = useState("system");
   const [timerPreset, setTimerPreset] = useState("25/5");
   const [sound, setSound] = useState(true);
@@ -55,6 +55,15 @@ export default function SettingsPage() {
     showToast("Настройки сброшены", "info");
   }
 
+  if (loading) return (
+    <main className="p-4 space-y-4">
+      <div className="skeleton h-8 w-48 mb-6" />
+      <div className="skeleton h-20 w-full rounded-2xl mb-6" />
+      <div className="skeleton h-32 w-full rounded-2xl mb-6" />
+      <div className="skeleton h-32 w-full rounded-2xl" />
+    </main>
+  );
+
   const name = profile?.name || "User";
   const email = profile?.email || user?.email || "";
   const initial = name.charAt(0).toUpperCase();
@@ -94,14 +103,14 @@ export default function SettingsPage() {
         <div className="px-4 pb-3"><div className="flex bg-ios-bg dark:bg-white/10 rounded-xl p-1">
           {["Система", "Светлая", "Тёмная"].map((t) => {
             const key = t === "Система" ? "system" : t === "Светлая" ? "light" : "dark";
-            return (<button key={t} onClick={() => handleTheme(key)} className={`flex-1 py-1.5 text-sm rounded-lg transition-all ${theme === key ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{t}</button>);
+            return (<button key={t} onClick={() => handleTheme(key)} className={`flex-1 py-1.5 text-xs sm:text-sm rounded-lg transition-all ${theme === key ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{t}</button>);
           })}
         </div></div>
       </Section>
       <Section title="Помодоро таймер">
         <Row icon={<span className="text-sm font-bold">⏱</span>} label="Режим" />
         <div className="px-4 pb-3"><div className="flex bg-ios-bg dark:bg-white/10 rounded-xl p-1">
-          {["25/5", "52/17", "90/20"].map((p) => (<button key={p} onClick={() => { setTimerPreset(p); updateStorage("timesync-timer-preset", p); }} className={`flex-1 py-1.5 text-sm rounded-lg transition-all ${timerPreset === p ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{p}</button>))}
+          {["25/5", "52/17", "90/20"].map((p) => (<button key={p} onClick={() => { setTimerPreset(p); updateStorage("timesync-timer-preset", p); }} className={`flex-1 py-1.5 text-xs sm:text-sm rounded-lg transition-all ${timerPreset === p ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{p}</button>))}
         </div></div>
       </Section>
       <Section title="Звук и вибрация">

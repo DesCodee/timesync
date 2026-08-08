@@ -15,22 +15,18 @@ export function useUser() {
   useEffect(() => {
     let mounted = true;
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       if (!mounted) return;
-      setUser(user);
-      if (user) {
-        const { data } = await supabase.from("profiles").select("name, email").eq("user_id", user.id).single();
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        const { data } = await supabase.from("profiles").select("name, email").eq("user_id", u.id).single();
         if (mounted) setProfile(data);
       }
       if (mounted) setLoading(false);
     }
     load();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!mounted) return;
-      setUser(session?.user ?? null);
-      if (!session?.user) setProfile(null);
-    });
-    return () => { mounted = false; subscription.unsubscribe(); };
+    return () => { mounted = false; };
   }, []);
 
   return { user, profile, loading };
