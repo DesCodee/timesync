@@ -1,30 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
+
+type Profile = { name: string; email: string };
 
 export function useUser() {
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    async function getUser() {
+    let mounted = true;
+    async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!mounted) return;
       setUser(user);
-      
       if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
-        setProfile(profile);
+        const { data } = await supabase.from("profiles").select("name, email").eq("user_id", user.id).single();
+        if (mounted) setProfile(data);
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
     }
-    getUser();
+    load();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (!mounted) return;
+      setUser(session?.user ?? null);
+      if (!session?.user) setProfile(null);
+    });
+    return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
   return { user, profile, loading };

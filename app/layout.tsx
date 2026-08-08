@@ -7,7 +7,6 @@ import "./globals.css";
 import { BottomNav } from "@/components/bottom-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { ToastProvider } from "@/lib/toast";
-import { PullToRefresh } from "@/components/pull-to-refresh";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -62,9 +61,7 @@ export default function RootLayout({
               <Sidebar />
               <main className="flex-1 md:ml-64">
                 <div className="md:hidden w-full min-h-screen relative pb-24">
-                  <PullToRefresh onRefresh={async () => window.location.reload()}>
-                    {children}
-                  </PullToRefresh>
+                  {children}
                   <BottomNav />
                 </div>
                 <div className="hidden md:block max-w-5xl mx-auto px-8 py-6 min-h-screen">

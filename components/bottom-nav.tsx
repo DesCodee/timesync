@@ -1,55 +1,45 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Home, CheckSquare, Clock, FolderKanban, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Sun, CheckSquare, Clock, Folder, BarChart3, Settings } from "lucide-react";
-import { cn } from "@/lib/utils";
 
-const navItems = [
-  { href: "/", label: "Сегодня", icon: Sun },
-  { href: "/tasks", label: "Задачи", icon: CheckSquare },
-  { href: "/focus", label: "Фокус", icon: Clock },
-  { href: "/projects", label: "Проекты", icon: Folder },
-  { href: "/analytics", label: "Аналитика", icon: BarChart3 },
-  { href: "/settings", label: "Настройки", icon: Settings },
+const items = [
+  { href: "/", icon: Home, label: "Сегодня" },
+  { href: "/tasks", icon: CheckSquare, label: "Задачи" },
+  { href: "/focus", icon: Clock, label: "Фокус" },
+  { href: "/projects", icon: FolderKanban, label: "Проекты" },
+  { href: "/settings", icon: Settings, label: "Настройки" },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+
+  async function logout() {
+    await supabase.auth.signOut();
+    router.push("/auth");
+    router.refresh();
+  }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-ios-dark/90 backdrop-blur-md border-t border-ios-separator dark:border-white/10 z-50">
-      <div className="mx-auto max-w-md flex justify-around items-center h-16">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-ios-card-dark/80 backdrop-blur-lg border-t border-ios-separator/50 pb-safe">
+      <div className="flex items-center justify-around h-16">
+        {items.map((item) => {
+          const active = pathname === item.href;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="relative flex flex-col items-center justify-center w-full h-full gap-1"
-            >
-              <item.icon
-                size={24}
-                strokeWidth={isActive ? 2 : 1.5}
-                className={cn(
-                  "transition-colors",
-                  isActive ? "text-black dark:text-white" : "text-ios-gray"
-                )}
-              />
-              <span
-                className={cn(
-                  "text-[10px] leading-none",
-                  isActive ? "text-black dark:text-white font-medium" : "text-ios-gray"
-                )}
-              >
-                {item.label}
-              </span>
-              {isActive && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-black dark:bg-white rounded-t-full" />
-              )}
+            <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 px-2 py-1 ${active ? "text-black dark:text-white" : "text-ios-gray"}`}>
+              <item.icon size={22} strokeWidth={active ? 2.5 : 1.5} />
+              <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           );
         })}
+        <button onClick={logout} className="flex flex-col items-center gap-0.5 px-2 py-1 text-ios-gray active:text-brand-red transition-colors">
+          <LogOut size={22} strokeWidth={1.5} />
+          <span className="text-[10px] font-medium">Выйти</span>
+        </button>
       </div>
     </nav>
   );
