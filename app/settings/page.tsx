@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useUser } from "@/hooks/use-user";
 import { Moon, Volume2, Smartphone, Bell, Eye, Info, Shield, FileText, RotateCcw, ChevronRight } from "lucide-react";
 import { anim } from "@/lib/anim";
+import { useToast } from "@/lib/toast";
 
 export default function SettingsPage() {
   const { profile, user } = useUser();
@@ -15,6 +16,7 @@ export default function SettingsPage() {
   const [morningDigest, setMorningDigest] = useState(false);
   const [habitRemind, setHabitRemind] = useState(false);
   const [showCompleted, setShowCompleted] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     setTheme(localStorage.getItem("timesync-theme") || "system");
@@ -28,8 +30,30 @@ export default function SettingsPage() {
   }, []);
 
   const updateStorage = (key: string, value: boolean | string) => localStorage.setItem(key, String(value));
-  const handleTheme = (t: string) => { setTheme(t); localStorage.setItem("timesync-theme", t); const root = document.documentElement; root.classList.remove("light", "dark"); if (t === "system") { if (window.matchMedia("(prefers-color-scheme: dark)").matches) root.classList.add("dark"); } else root.classList.add(t); };
-  async function handleReset() { if (!confirm("Сбросить все настройки?")) return; localStorage.clear(); setTheme("system"); setTimerPreset("25/5"); setSound(true); setVibration(true); setTimerNotif(true); setMorningDigest(false); setHabitRemind(false); setShowCompleted(true); handleTheme("system"); }
+  const handleTheme = (t: string) => {
+    setTheme(t);
+    localStorage.setItem("timesync-theme", t);
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    if (t === "system") {
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) root.classList.add("dark");
+    } else root.classList.add(t);
+  };
+
+  async function handleReset() {
+    if (!window.confirm("Сбросить все настройки?")) return;
+    localStorage.clear();
+    setTheme("system");
+    setTimerPreset("25/5");
+    setSound(true);
+    setVibration(true);
+    setTimerNotif(true);
+    setMorningDigest(false);
+    setHabitRemind(false);
+    setShowCompleted(true);
+    handleTheme("system");
+    showToast("Настройки сброшены", "info");
+  }
 
   const name = profile?.name || "User";
   const email = profile?.email || user?.email || "";
@@ -41,6 +65,7 @@ export default function SettingsPage() {
       <div className="bg-white dark:bg-ios-card-dark rounded-2xl shadow-sm divide-y divide-ios-separator/50 border border-ios-separator/30">{children}</div>
     </div>
   );
+
   const Row = ({ icon, label, desc, action, onClick }: any) => (
     <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3.5 ${onClick ? "cursor-pointer" : ""}`}>
       <div className="w-8 h-8 rounded-lg bg-ios-bg dark:bg-white/10 flex items-center justify-center text-ios-gray flex-shrink-0">{icon}</div>
@@ -48,6 +73,7 @@ export default function SettingsPage() {
       {action && <div className="flex-shrink-0">{action}</div>}{onClick && !action && <ChevronRight size={18} className="text-ios-gray flex-shrink-0" />}
     </div>
   );
+
   const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
     <button onClick={() => onChange(!value)} className={`w-12 h-7 rounded-full transition-colors relative ${value ? "bg-brand-green" : "bg-ios-separator"}`}>
       <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${value ? "translate-x-5" : "translate-x-0.5"}`} />
@@ -66,7 +92,10 @@ export default function SettingsPage() {
       <Section title="Внешний вид">
         <Row icon={<Moon size={18} />} label="Тема" />
         <div className="px-4 pb-3"><div className="flex bg-ios-bg dark:bg-white/10 rounded-xl p-1">
-          {["Система", "Светлая", "Тёмная"].map((t) => { const key = t === "Система" ? "system" : t === "Светлая" ? "light" : "dark"; return (<button key={t} onClick={() => handleTheme(key)} className={`flex-1 py-1.5 text-sm rounded-lg transition-all ${theme === key ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{t}</button>); })}
+          {["Система", "Светлая", "Тёмная"].map((t) => {
+            const key = t === "Система" ? "system" : t === "Светлая" ? "light" : "dark";
+            return (<button key={t} onClick={() => handleTheme(key)} className={`flex-1 py-1.5 text-sm rounded-lg transition-all ${theme === key ? "bg-white dark:bg-ios-card-dark shadow-sm font-medium" : "text-ios-gray"}`}>{t}</button>);
+          })}
         </div></div>
       </Section>
       <Section title="Помодоро таймер">

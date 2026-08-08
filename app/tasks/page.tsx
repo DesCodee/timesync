@@ -6,6 +6,7 @@ import { Search, Star, Calendar, Pencil, Trash2, X } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { anim } from "@/lib/anim";
 import { useToast } from "@/lib/toast";
+import { SkeletonCard } from "@/components/skeletons";
 
 type Task = { id: string; title: string; description: string | null; priority: string; work_type: string | null; due_date: string | null; is_mit: boolean; is_completed: boolean; completed_at: string | null; project_id: string | null; projects?: { name: string } | null; };
 type Project = { id: string; name: string };
@@ -40,7 +41,6 @@ export default function TasksPage() {
     showToast(!current ? "Задача выполнена!" : "Задача возвращена", "success");
     fetchTasks();
   }
-
   async function createTask(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !newTitle.trim()) return;
@@ -48,7 +48,6 @@ export default function TasksPage() {
     showToast("Задача создана", "success");
     closeModal(); fetchTasks();
   }
-
   async function updateTask(e: React.FormEvent) {
     e.preventDefault();
     if (!editId || !newTitle.trim()) return;
@@ -56,14 +55,12 @@ export default function TasksPage() {
     showToast("Задача обновлена", "success");
     closeModal(); fetchTasks();
   }
-
   async function deleteTask(id: string) {
     if (!window.confirm("Удалить задачу?")) return;
     await supabase.from("tasks").delete().eq("id", id);
     showToast("Задача удалена", "info");
     fetchTasks();
   }
-
   function openEdit(task: Task) { setEditMode(true); setEditId(task.id); setNewTitle(task.title); setNewPriority(task.priority); setNewWorkType(task.work_type || ""); setNewProject(task.project_id || ""); setNewDate(task.due_date || ""); setNewMit(task.is_mit); setShowModal(true); }
   function openCreate() { setEditMode(false); setEditId(null); setNewTitle(""); setNewPriority("medium"); setNewWorkType(""); setNewProject(""); setNewDate(""); setNewMit(false); setShowModal(true); }
   function closeModal() { setShowModal(false); setEditMode(false); setEditId(null); }
@@ -71,7 +68,17 @@ export default function TasksPage() {
   const filtered = tasks.filter((t) => { const m = t.title.toLowerCase().includes(search.toLowerCase()); if (filter === "active") return m && !t.is_completed; if (filter === "done") return m && t.is_completed; if (filter === "no-mit") return m && !t.is_mit && !t.is_completed; return m; });
   const counts = { all: tasks.length, active: tasks.filter((t) => !t.is_completed).length, "no-mit": tasks.filter((t) => !t.is_mit && !t.is_completed).length, done: tasks.filter((t) => t.is_completed).length };
   const filters = [{ key: "all", label: "Все" }, { key: "active", label: "Активные" }, { key: "no-mit", label: "Без MIT" }, { key: "done", label: "Готово" }];
-  if (loading) return <div className="p-4">Загрузка...</div>;
+
+  if (loading) return (
+    <main className="p-4 space-y-4">
+      <div className="skeleton h-8 w-32 mb-4" />
+      <div className="skeleton h-12 w-full rounded-2xl mb-4" />
+      <div className="flex gap-2 mb-4">
+        {[0,1,2,3].map((i) => <div key={i} className="skeleton h-10 flex-1 rounded-full" />)}
+      </div>
+      {[0,1,2,3,4].map((i) => <SkeletonCard key={i} lines={2} />)}
+    </main>
+  );
 
   return (
     <main className="p-4">

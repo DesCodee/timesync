@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import { Pencil, Trash2, X } from "lucide-react";
 import { anim } from "@/lib/anim";
+import { useToast } from "@/lib/toast";
+import { SkeletonWidget, SkeletonCard } from "@/components/skeletons";
 
 type Project = { id: string; name: string; description: string | null; color: string };
 type Task = { id: string; project_id: string | null; is_completed: boolean; due_date: string | null };
@@ -20,6 +22,7 @@ export default function ProjectsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const { user } = useUser();
   const supabase = createClient();
+  const { showToast } = useToast();
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newColor, setNewColor] = useState(COLORS[0]);
@@ -38,17 +41,20 @@ export default function ProjectsPage() {
     e.preventDefault();
     if (!user || !newName.trim()) return;
     await supabase.from("projects").insert({ user_id: user.id, name: newName, description: newDesc || null, color: newColor });
+    showToast("Проект создан", "success");
     closeModal(); fetchData();
   }
   async function updateProject(e: React.FormEvent) {
     e.preventDefault();
     if (!editId || !newName.trim()) return;
     await supabase.from("projects").update({ name: newName, description: newDesc || null, color: newColor }).eq("id", editId);
+    showToast("Проект обновлён", "success");
     closeModal(); fetchData();
   }
   async function deleteProject(id: string) {
-    if (!confirm("Удалить проект? Все связанные задачи останутся без проекта.")) return;
+    if (!window.confirm("Удалить проект?")) return;
     await supabase.from("projects").delete().eq("id", id);
+    showToast("Проект удалён", "info");
     fetchData();
   }
   function getStats(projectId: string) {
@@ -59,7 +65,16 @@ export default function ProjectsPage() {
   function openCreate() { setEditMode(false); setEditId(null); setNewName(""); setNewDesc(""); setNewColor(COLORS[0]); setShowModal(true); }
   function closeModal() { setShowModal(false); setEditMode(false); setEditId(null); }
 
-  if (loading) return <div className="p-4">Загрузка...</div>;
+  if (loading) return (
+    <main className="p-4 space-y-4">
+      <div className="skeleton h-8 w-32 mb-4" />
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[0,1,2].map((i) => <SkeletonWidget key={i} />)}
+      </div>
+      {[0,1,2].map((i) => <SkeletonCard key={i} lines={3} />)}
+    </main>
+  );
+
   const totalTasks = tasks.length; const doneTasks = tasks.filter((t) => t.is_completed).length;
 
   return (
