@@ -78,3 +78,22 @@
   background: linear-gradient(90deg, #2C2C2E 25%, #3A3A3C 50%, #2C2C2E 75%);
   background-size: 200% 100%;
 }
+
+html, body {
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}

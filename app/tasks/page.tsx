@@ -95,9 +95,9 @@ export default function TasksPage() {
         </div>
       </div>
       <div className={anim("animate-fade-up", 2)}>
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
           {filters.map((f) => (
-            <button key={f.key} onClick={() => setFilter(f.key)} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${filter === f.key ? "bg-black text-white dark:bg-white dark:text-black" : "bg-white dark:bg-ios-card-dark text-ios-gray shadow-sm"}`}>
+            <button key={f.key} onClick={() => setFilter(f.key)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${filter === f.key ? "bg-black text-white dark:bg-white dark:text-black" : "bg-white dark:bg-ios-card-dark text-ios-gray shadow-sm"}`}>
               {f.label}
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${filter === f.key ? "bg-white/20" : "bg-ios-bg dark:bg-white/10"}`}>{counts[f.key as keyof typeof counts]}</span>
             </button>

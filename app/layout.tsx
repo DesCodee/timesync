@@ -7,6 +7,7 @@ import "./globals.css";
 import { BottomNav } from "@/components/bottom-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { ToastProvider } from "@/lib/toast";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -52,7 +53,7 @@ export default function RootLayout({
 
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans bg-ios-bg dark:bg-ios-dark`}>
+      <body className={`${inter.variable} font-sans bg-ios-bg dark:bg-ios-dark overflow-x-hidden`}>
         <ToastProvider>
           {isAuth ? (
             <div className="min-h-screen">{children}</div>
@@ -60,8 +61,10 @@ export default function RootLayout({
             <div className="flex min-h-screen">
               <Sidebar />
               <main className="flex-1 md:ml-64">
-                <div className="md:hidden mx-auto max-w-md min-h-screen relative pb-20">
-                  {children}
+                <div className="md:hidden w-full min-h-screen relative pb-24">
+                  <PullToRefresh onRefresh={async () => window.location.reload()}>
+                    {children}
+                  </PullToRefresh>
                   <BottomNav />
                 </div>
                 <div className="hidden md:block max-w-5xl mx-auto px-8 py-6 min-h-screen">
