@@ -6,6 +6,8 @@ import { useUser } from "@/hooks/use-user";
 import { Play, Pause, Square, RotateCcw, ChevronDown } from "lucide-react";
 import { anim } from "@/lib/anim";
 import { useToast } from "@/lib/toast";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { SkeletonCircle } from "@/components/skeletons";
 
 type Task = { id: string; title: string };
@@ -41,6 +43,8 @@ export default function FocusPage() {
   const { user } = useUser();
   const supabase = createClient();
   const { showToast } = useToast();
+  useBeforeUnload(isRunning);
+  useBeforeUnload(isRunning);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const endTimeRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
