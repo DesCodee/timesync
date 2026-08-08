@@ -22,6 +22,27 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     applyTheme(saved);
   }, []);
 
+  useEffect(() => {
+    if ('serviceWorker' in navigator) navigator.register('/sw.js').catch(()=>{});
+    const head = document.head;
+    const addMeta = (name: string, content: string) => {
+      if (!head.querySelector(`meta[name="${name}"]`)) {
+        const m = document.createElement('meta');
+        m.name = name; m.content = content;
+        head.appendChild(m);
+      }
+    };
+    addMeta('apple-mobile-web-app-capable', 'yes');
+    addMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
+    addMeta('apple-mobile-web-app-title', 'TimeSync');
+    addMeta('theme-color', '#000000');
+    if (!head.querySelector('link[rel="manifest"]')) {
+      const l = document.createElement('link');
+      l.rel = 'manifest'; l.href = '/manifest.json';
+      head.appendChild(l);
+    }
+  }, []);
+
   function applyTheme(t: string) {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
