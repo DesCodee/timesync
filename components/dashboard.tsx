@@ -1,6 +1,7 @@
 "use client";
+import Link from "next/link";
 "use client";
-
+"use client";
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
@@ -9,14 +10,11 @@ import { anim } from "@/lib/anim";
 import { useToast } from "@/lib/toast";
 import { SkeletonWidget, SkeletonCard } from "@/components/skeletons";
 import { useTranslation } from "@/hooks/use-translation";
-
 type Task = { id: string; title: string; is_completed: boolean; is_mit: boolean; due_date: string | null; };
 type Meeting = { id: string; title: string; start_time: string; end_time: string; color: string; };
 type Habit = { id: string; name: string; color: string; logs: { completed_date: string }[]; };
-
 const todayISO = () => { const d = new Date(); return d.toISOString().split("T")[0]; };
 const greeting = () => { const h = new Date().getHours(); if (h < 12) return "morning"; if (h < 18) return "day"; return "evening"; };
-
 export default function Dashboard() {
   const { user, profile } = useUser();
   const supabase = createClient();
@@ -34,7 +32,6 @@ export default function Dashboard() {
   const [mStart, setMStart] = useState("");
   const [mEnd, setMEnd] = useState("");
   const [hName, setHName] = useState("");
-
   const locale = lang === "en" ? "en-US" : "ru-RU";
   const todayStr = useMemo(() => {
     const d = new Date();
@@ -44,7 +41,6 @@ export default function Dashboard() {
     const d = new Date();
     return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   }, [locale]);
-
   useEffect(() => { setMounted(true); }, []);
   async function fetchData() {
     if (!user) return;
@@ -66,13 +62,11 @@ export default function Dashboard() {
     setLoading(false);
   }
   useEffect(() => { if (user) fetchData(); }, [user]);
-
   const todayTasks = tasks.filter((t) => t.due_date === todayISO());
   const completedToday = todayTasks.filter((t) => t.is_completed).length;
   const totalToday = todayTasks.length;
   const inProgress = todayTasks.filter((t) => !t.is_completed).length;
   const mitTask = tasks.find((t) => t.is_mit && !t.is_completed);
-
   async function toggleTask(id: string, done: boolean) {
     await supabase.from("tasks").update({ is_completed: !done, completed_at: !done ? new Date().toISOString() : null }).eq("id", id);
     showToast(!done ? t("dashboard", "markDone") : t("common", "cancel"), "success");
@@ -129,7 +123,6 @@ export default function Dashboard() {
     return streak;
   }
   const maxStreak = useMemo(() => Math.max(0, ...habits.map((h) => habitStreak(h.logs))), [habits]);
-
   if (!mounted) return (
     <main className="p-4 space-y-4">
       <div className="skeleton h-8 w-48 mb-2" />
@@ -137,7 +130,6 @@ export default function Dashboard() {
       <SkeletonCard lines={3} /><SkeletonCard lines={2} /><SkeletonCard lines={2} />
     </main>
   );
-
   if (loading) return (
     <main className="p-4 space-y-4">
       <div className="skeleton h-8 w-48 mb-2" />
@@ -145,10 +137,8 @@ export default function Dashboard() {
       <SkeletonCard lines={3} /><SkeletonCard lines={2} /><SkeletonCard lines={2} />
     </main>
   );
-
   const greetKey = greeting();
   const greetText = greetKey === "morning" ? t("dashboard", "greeting_morning") : greetKey === "day" ? t("dashboard", "greeting_day") : t("dashboard", "greeting_evening");
-
   return (
     <main className="p-4 space-y-4">
       <div className={anim("animate-fade-up")}>
@@ -160,7 +150,6 @@ export default function Dashboard() {
           <div className="bg-white dark:bg-ios-card-dark rounded-2xl px-4 py-2 text-lg font-semibold shadow-sm border border-ios-separator/50 animate-scale-in">{timeStr}</div>
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: t("dashboard", "done"), value: `${completedToday}/${totalToday}`, color: "text-brand-green" },
@@ -176,7 +165,6 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
-
       <div className={anim("animate-fade-up", 2)}>
         {mitTask ? (
           <div className="bg-white dark:bg-ios-card-dark rounded-2xl p-6 shadow-sm border border-ios-separator/30 flex flex-col items-center gap-3 animate-scale-in">
@@ -197,7 +185,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
       <div className={anim("animate-fade-up", 3)}>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold">{t("tasks", "title")} <span className="text-ios-gray text-base font-normal">({todayTasks.length})</span></h2>
@@ -219,7 +206,6 @@ export default function Dashboard() {
           {todayTasks.length === 0 && <p className="text-ios-gray text-sm">{t("dashboard", "noTasks")}</p>}
         </div>
       </div>
-
       <div className={anim("animate-fade-up", 4)}>
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-medium text-ios-gray uppercase tracking-wider">{t("dashboard", "meetings")}</p>
@@ -239,7 +225,6 @@ export default function Dashboard() {
           {meetings.length === 0 && <p className="text-ios-gray text-sm">{t("dashboard", "noMeetings")}</p>}
         </div>
       </div>
-
       <div className={anim("animate-fade-up", 5)}>
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-medium text-ios-gray uppercase tracking-wider">{t("dashboard", "habits")}</p>
@@ -272,7 +257,6 @@ export default function Dashboard() {
           {habits.length === 0 && <p className="text-ios-gray text-sm">{t("dashboard", "noHabits")}</p>}
         </div>
       </div>
-
       {showMeetingModal && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4 animate-fade-in">
           <div className="bg-white dark:bg-ios-card-dark w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 animate-slide-up">
@@ -291,7 +275,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
       {showHabitModal && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4 animate-fade-in">
           <div className="bg-white dark:bg-ios-card-dark w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 animate-slide-up">
