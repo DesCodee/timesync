@@ -25,7 +25,7 @@ function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-white dark:bg-ios-card-dark border-r border-ios-separator/30 flex-col p-4 z-40">
+    <aside className="bg-white dark:bg-ios-card-dark border-r border-ios-separator/30 flex flex-col p-4 h-screen sticky top-0">
       <div className="flex items-center gap-2 px-2 mb-8">
         <div className="w-8 h-8 rounded-lg bg-black dark:bg-white flex items-center justify-center">
           <Clock size={18} className="text-white dark:text-black" />
@@ -76,17 +76,21 @@ function BottomNav() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 md:ml-64">
-        <div className="md:hidden w-full min-h-screen relative pb-20">
+    <div className="min-h-screen bg-ios-bg dark:bg-ios-dark">
+      {/* Desktop: sidebar + content */}
+      <div className="hidden md:grid md:grid-cols-[16rem_1fr]">
+        <Sidebar />
+        <main className="px-8 py-6 max-w-5xl mx-auto">
           {children}
-          <BottomNav />
-        </div>
-        <div className="hidden md:block max-w-5xl mx-auto px-8 py-6 min-h-screen">
+        </main>
+      </div>
+      {/* Mobile: content + bottom nav */}
+      <div className="md:hidden pb-20">
+        <div className="p-4">
           {children}
         </div>
-      </main>
+        <BottomNav />
+      </div>
     </div>
   );
 }
