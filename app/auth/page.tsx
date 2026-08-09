@@ -32,7 +32,9 @@ export default function AuthPage() {
     } else {
       const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
       if (signUpError || !data.user) { setError(signUpError?.message || t("auth", "error")); setLoading(false); return; }
-      await supabase.from("profiles").insert({ user_id: data.user.id, name: name || email.split("@")[0], email });
+      const displayName = name || email.split("@")[0];
+      await supabase.auth.updateUser({ data: { name: displayName } });
+      await supabase.from("profiles").insert({ user_id: data.user.id, name: displayName, email });
       router.push("/");
     }
     setLoading(false);

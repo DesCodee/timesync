@@ -1,50 +1,40 @@
 "use client";
-
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { User } from "@supabase/supabase-js";
 
-type Profile = { name: string; email: string };
-type UserContextType = { user: User | null; profile: Profile | null; loading: boolean };
+type UserCtx = {
+  user: any;
+  profile: any;
+  loading: boolean;
+};
 
-const UserContext = createContext<UserContextType>({ user: null, profile: null, loading: true });
+const UserContext = createContext<UserCtx>({ user: null, profile: null, loading: true });
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
-    let mounted = true;
-    const supabase = createClient();
-
-    async function load() {
+    async function init() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!mounted) return;
       const u = session?.user ?? null;
       setUser(u);
       if (u) {
-        const { data } = await supabase.from("profiles").select("name, email").eq("user_id", u.id).single();
-        if (mounted) setProfile(data);
+        const { data } = await supabase.from("profiles").select("*").eq("user_id", u.id).single();
+        setProfile(data);
       }
-      if (mounted) setLoading(false);
+      setLoading(false);
     }
-    load();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!mounted) return;
+    init();
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (!session?.user) setProfile(null);
     });
-
-    return () => { mounted = false; subscription.unsubscribe(); };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  return (
-    <UserContext.Provider value={{ user, profile, loading }}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={{ user, profile, loading }}>{children}</UserContext.Provider>;
 }
 
 export function useUser() {
