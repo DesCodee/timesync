@@ -15,11 +15,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   const pathname = usePathname();
   const isAuth = pathname === "/auth";
   const [theme, setTheme] = useState("system");
+  const [lang, setLang] = useState("ru");
 
   useEffect(() => {
-    const saved = localStorage.getItem("timesync-theme") || "system";
-    setTheme(saved);
-    applyTheme(saved);
+    const savedTheme = localStorage.getItem("timesync-theme") || "system";
+    const savedLang = (localStorage.getItem("timesync-lang") as "ru" | "en") || "ru";
+    setTheme(savedTheme);
+    setLang(savedLang);
+    applyTheme(savedTheme);
+    document.documentElement.lang = savedLang;
   }, []);
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   }, [theme]);
 
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <body className={`${inter.variable} font-sans bg-ios-bg dark:bg-ios-dark overflow-x-hidden`}>
         <I18nProvider>
           <UserProvider>

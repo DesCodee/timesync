@@ -202,7 +202,7 @@ export default function TasksPage() {
               </div>
               <div>
                 <label className="text-xs text-ios-gray mb-1 block">{t("tasks", "dueDate")}</label>
-                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-ios-bg dark:bg-white/5 border-0 text-base outline-none" />
+                <input type="date" lang={lang} value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-ios-bg dark:bg-white/5 border-0 text-base outline-none" />
               </div>
               <div>
                 <label className="text-xs text-ios-gray mb-1 block">{t("tasks", "project")}</label>
