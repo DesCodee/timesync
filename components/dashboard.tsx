@@ -142,7 +142,7 @@ export default function Dashboard() {
       <div className={anim("animate-fade-up")}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center justify-between"><h1 className="text-[28px] font-bold leading-tight">{greetText}, {profile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || t("auth", "name")}</h1><Link href="/account" className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Settings size={20} className="text-ios-gray" /></Link></div>
+            <div className="flex items-center justify-between"><h1 className="text-[28px] font-bold leading-tight">{greetText}, {profile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || "User"}</h1><Link href="/account" className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Settings size={20} className="text-ios-gray" /></Link></div>
             <p className="text-ios-gray text-base mt-1 capitalize">{todayStr}</p>
           </div>
           <div className="bg-white dark:bg-ios-card-dark rounded-2xl px-4 py-2 text-lg font-semibold shadow-sm border border-ios-separator/50 animate-scale-in">{timeStr}</div>
