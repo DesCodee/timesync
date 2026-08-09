@@ -25,7 +25,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const { data } = await supabase.from("profiles").select("*").eq("user_id", u.id).single();
         // Fallback: если профиль пустой, берём имя из user_metadata
         const fallbackName = u.user_metadata?.name || u.email?.split("@")[0] || "User";
-        setProfile(data || { name: fallbackName, email: u.email });
+        setProfile(data ? { ...data, name: data.name || fallbackName } : { name: fallbackName, email: u.email });
       }
       setLoading(false);
     }
