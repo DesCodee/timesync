@@ -24,6 +24,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     setLang(savedLang);
     applyTheme(savedTheme);
     document.documentElement.lang = savedLang;
+    document.title = "TimeSync — Tasks, Focus & Habits";
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute("content", "Minimal productivity app for tasks, Pomodoro focus sessions, and daily habits. Dark mode, PWA, offline-first.");
+    else {
+      const m = document.createElement("meta");
+      m.name = "description";
+      m.content = "Minimal productivity app for tasks, Pomodoro focus sessions, and daily habits. Dark mode, PWA, offline-first.";
+      document.head.appendChild(m);
+    }
   }, []);
 
   useEffect(() => {
@@ -34,7 +43,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     const root = document.documentElement;
     root.classList.remove("light", "dark");
     if (t === "system") {
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) root.classList.add("dark");
+      if (window.matchMedia("(prefers-color-scheme: dark)).matches) root.classList.add("dark");
     } else root.classList.add(t);
   }
 
