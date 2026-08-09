@@ -14,15 +14,13 @@ type Meeting = { id: string; title: string; start_time: string; end_time: string
 type Habit = { id: string; name: string; color: string; logs: { completed_date: string }[]; };
 
 const todayISO = () => { const d = new Date(); return d.toISOString().split("T")[0]; };
-const todayStr = () => { const d = new Date(); return d.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" }); };
-const timeStr = () => { const d = new Date(); return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }); };
 const greeting = () => { const h = new Date().getHours(); if (h < 12) return "morning"; if (h < 18) return "day"; return "evening"; };
 
 export default function Dashboard() {
   const { user, profile } = useUser();
   const supabase = createClient();
   const { showToast } = useToast();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -35,6 +33,10 @@ export default function Dashboard() {
   const [mStart, setMStart] = useState("");
   const [mEnd, setMEnd] = useState("");
   const [hName, setHName] = useState("");
+
+  const locale = lang === "en" ? "en-US" : "ru-RU";
+  const todayStr = () => { const d = new Date(); return d.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" }); };
+  const timeStr = () => { const d = new Date(); return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }); };
 
   useEffect(() => { setMounted(true); }, []);
   async function fetchData() {
@@ -52,7 +54,7 @@ export default function Dashboard() {
       setHabits((hd || []).map((h: any) => ({ ...h, logs: h.habit_logs || [] })));
       setFocusMin((fd || []).reduce((sum: number, s: any) => sum + (s.actual_duration_min || 0), 0));
     } catch {
-      showToast(t("dashboard", "noTasks") === "Нет задач на сегодня" ? "Ошибка сети, показаны сохранённые данные" : "Network error, showing cached data", "error");
+      showToast(lang === "en" ? "Network error, showing cached data" : "Ошибка сети, показаны сохранённые данные", "error");
     }
     setLoading(false);
   }
@@ -66,13 +68,13 @@ export default function Dashboard() {
 
   async function toggleTask(id: string, done: boolean) {
     await supabase.from("tasks").update({ is_completed: !done, completed_at: !done ? new Date().toISOString() : null }).eq("id", id);
-    showToast(!done ? t("dashboard", "markDone") : t("dashboard", "markDone"), "success");
+    showToast(!done ? t("dashboard", "markDone") : t("common", "cancel"), "success");
     fetchData();
   }
   async function setMit(id: string) {
     await supabase.from("tasks").update({ is_mit: false }).eq("user_id", user!.id);
     await supabase.from("tasks").update({ is_mit: true }).eq("id", id);
-    showToast("MIT " + (t("dashboard", "markDone") === "Отметить выполненной" ? "назначен" : "set"), "success");
+    showToast("MIT " + (lang === "en" ? "set" : "назначен"), "success");
     fetchData();
   }
   async function toggleHabit(habitId: string, date: string) {
@@ -93,7 +95,7 @@ export default function Dashboard() {
     if (!user || !mTitle || !mStart || !mEnd) return;
     await supabase.from("meetings").insert({ user_id: user.id, title: mTitle, start_time: new Date(mStart).toISOString(), end_time: new Date(mEnd).toISOString(), color: "#FF3B30" });
     setMTitle(""); setMStart(""); setMEnd(""); setShowMeetingModal(false);
-    showToast(t("dashboard", "newMeeting") + " " + (t("common", "save") === "Сохранить" ? "добавлена" : "added"), "success");
+    showToast(t("dashboard", "newMeeting") + " " + (lang === "en" ? "added" : "добавлена"), "success");
     fetchData();
   }
   async function addHabit(e: React.FormEvent) {
@@ -101,15 +103,15 @@ export default function Dashboard() {
     if (!user || !hName) return;
     await supabase.from("habits").insert({ user_id: user.id, name: hName, color: "#34C759" });
     setHName(""); setShowHabitModal(false);
-    showToast(t("dashboard", "newHabit") + " " + (t("common", "save") === "Сохранить" ? "создана" : "created"), "success");
+    showToast(t("dashboard", "newHabit") + " " + (lang === "en" ? "created" : "создана"), "success");
     fetchData();
   }
   function meetingDuration(m: Meeting) {
     const s = new Date(m.start_time); const e = new Date(m.end_time);
-    return `${Math.round((e.getTime() - s.getTime()) / 60000)}м`;
+    return `${Math.round((e.getTime() - s.getTime()) / 60000)}${lang === "en" ? "m" : "м"}`;
   }
   function meetingTime(m: Meeting) {
-    return new Date(m.start_time).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    return new Date(m.start_time).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   }
   function habitStreak(logs: { completed_date: string }[]) {
     const dates = Array.from(new Set(logs.map((l) => l.completed_date))).sort();
@@ -155,8 +157,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: t("dashboard", "done"), value: `${completedToday}/${totalToday}`, color: "text-brand-green" },
-          { label: t("dashboard", "focus"), value: `${Math.floor(focusMin / 60)}ч ${focusMin % 60}м`, color: "text-brand-green" },
-          { label: t("dashboard", "streak"), value: `${maxStreak} ${t("dashboard", "streak") === "Streak" ? "d" : "дн"}`, color: "text-brand-orange" },
+          { label: t("dashboard", "focus"), value: `${Math.floor(focusMin / 60)}${lang === "en" ? "h " : "ч "}${focusMin % 60}${lang === "en" ? "m" : "м"}`, color: "text-brand-green" },
+          { label: t("dashboard", "streak"), value: `${maxStreak} ${lang === "en" ? "d" : "дн"}`, color: "text-brand-orange" },
           { label: t("dashboard", "inProgress"), value: `${inProgress}`, color: "text-black dark:text-white" },
         ].map((w, i) => (
           <div key={w.label} className={anim("animate-fade-up", i)} style={{ animationDelay: `${i * 0.05}s` }}>
@@ -253,7 +255,7 @@ export default function Dashboard() {
                     <button onClick={() => deleteHabit(h.id)} className="p-1 rounded-md hover:bg-brand-red/10 text-ios-gray hover:text-brand-red transition-colors"><Trash2 size={14} /></button>
                     <div className="flex items-center gap-1 bg-ios-bg dark:bg-white/10 px-2 py-1 rounded-lg">
                       <span className="text-brand-orange text-sm">🔥</span>
-                      <span className="text-sm font-medium text-brand-orange">{streak}{t("dashboard", "streak") === "Streak" ? "d" : "д"}</span>
+                      <span className="text-sm font-medium text-brand-orange">{streak}{lang === "en" ? "d" : "д"}</span>
                     </div>
                   </div>
                 </div>
