@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Link from "next/link";
 "use client";
 "use client";
 import { useState, useEffect, useMemo } from "react";
