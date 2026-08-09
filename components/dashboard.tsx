@@ -1,4 +1,5 @@
 "use client";
+import { AppShell } from "@/components/app-shell";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
