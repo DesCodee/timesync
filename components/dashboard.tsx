@@ -1,4 +1,3 @@
-import { AppShell } from "@/components/app-shell";
 "use client";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
