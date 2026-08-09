@@ -35,8 +35,14 @@ export default function Dashboard() {
   const [hName, setHName] = useState("");
 
   const locale = lang === "en" ? "en-US" : "ru-RU";
-  const todayStr = () => { const d = new Date(); return d.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" }); };
-  const timeStr = () => { const d = new Date(); return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }); };
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
+  }, [locale]);
+  const timeStr = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  }, [locale]);
 
   useEffect(() => { setMounted(true); }, []);
   async function fetchData() {
@@ -148,9 +154,9 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[28px] font-bold leading-tight">{greetText}, {profile?.name || t("auth", "name")}</h1>
-            <p className="text-ios-gray text-base mt-1 capitalize">{todayStr()}</p>
+            <p className="text-ios-gray text-base mt-1 capitalize">{todayStr}</p>
           </div>
-          <div className="bg-white dark:bg-ios-card-dark rounded-2xl px-4 py-2 text-lg font-semibold shadow-sm border border-ios-separator/50 animate-scale-in">{timeStr()}</div>
+          <div className="bg-white dark:bg-ios-card-dark rounded-2xl px-4 py-2 text-lg font-semibold shadow-sm border border-ios-separator/50 animate-scale-in">{timeStr}</div>
         </div>
       </div>
 
