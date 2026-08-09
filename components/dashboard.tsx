@@ -1,3 +1,4 @@
+import { AppShell } from "@/components/app-shell";
 "use client";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
@@ -122,11 +123,13 @@ export default function Dashboard() {
   }
   const maxStreak = useMemo(() => Math.max(0, ...habits.map((h) => habitStreak(h.logs))), [habits]);
   if (!mounted) return (
-    <main className="p-4 space-y-4">
+    <AppShell>
+      <main className="p-4 space-y-4">
       <div className="skeleton h-8 w-48 mb-2" />
       <div className="grid grid-cols-2 gap-3">{[0,1,2,3].map((i) => <SkeletonWidget key={i} />)}</div>
       <SkeletonCard lines={3} /><SkeletonCard lines={2} /><SkeletonCard lines={2} />
     </main>
+    </AppShell>
   );
   if (loading) return (
     <main className="p-4 space-y-4">
