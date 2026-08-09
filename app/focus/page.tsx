@@ -8,6 +8,7 @@ import { anim } from "@/lib/anim";
 import { useToast } from "@/lib/toast";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { SkeletonCircle } from "@/components/skeletons";
+import { useTranslation } from "@/hooks/use-translation";
 
 type Task = { id: string; title: string };
 
@@ -42,6 +43,7 @@ export default function FocusPage() {
   const { user } = useUser();
   const supabase = createClient();
   const { showToast } = useToast();
+  const { t, lang } = useTranslation();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const endTimeRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
@@ -132,7 +134,7 @@ export default function FocusPage() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     playSound();
     vibrate();
-    showToast(mode === "work" ? "Сессия завершена! Отдыхайте." : "Перерыв окончен! За работу.", "success");
+    showToast(mode === "work" ? t("focus", "sessionDone") : t("focus", "breakDone"), "success");
     if (sessionId) {
       supabase.from("focus_sessions").update({ ended_at: new Date().toISOString(), actual_duration_min: totalTime }).eq("id", sessionId);
       setSessionId(null);
@@ -153,7 +155,7 @@ export default function FocusPage() {
       setTimeLeft(currentPreset.work * 60);
     }
     localStorage.removeItem(STORAGE_KEY);
-  }, [mode, sessionsDone, sessionId, totalTime, currentPreset]);
+  }, [mode, sessionsDone, sessionId, totalTime, currentPreset, t]);
 
   async function toggleTimer() {
     if (!isRunning) {
@@ -161,7 +163,7 @@ export default function FocusPage() {
       endTimeRef.current = now + timeLeft * 1000;
       startTimeRef.current = now;
       setIsRunning(true);
-      showToast("Таймер запущен", "info");
+      showToast(t("focus", "timerStarted"), "info");
       if (mode === "work" && user) {
         const { data } = await supabase.from("focus_sessions").insert({ user_id: user.id, task_id: selectedTask, duration_min: totalTime, session_type: "work", started_at: new Date().toISOString() }).select().single();
         if (data) setSessionId(data.id);
@@ -172,7 +174,7 @@ export default function FocusPage() {
       if (sessionId) {
         supabase.from("focus_sessions").update({ actual_duration_min: elapsed || 1 }).eq("id", sessionId);
       }
-      showToast("Таймер на паузе", "info");
+      showToast(t("focus", "timerPaused"), "info");
       setTimeLeft(Math.ceil((endTimeRef.current - Date.now()) / 1000));
     }
   }
@@ -189,7 +191,7 @@ export default function FocusPage() {
     setTimeLeft(currentPreset.work * 60);
     setSessionsDone(0);
     localStorage.removeItem(STORAGE_KEY);
-    showToast("Таймер сброшен", "info");
+    showToast(t("focus", "timerReset"), "info");
   }
 
   function resetTimer() {
@@ -203,7 +205,7 @@ export default function FocusPage() {
       setSessionId(null);
     }
     localStorage.removeItem(STORAGE_KEY);
-    showToast("Таймер сброшен", "info");
+    showToast(t("focus", "timerReset"), "info");
   }
 
   function switchPreset(p: PresetKey) {
@@ -217,10 +219,10 @@ export default function FocusPage() {
       setSessionId(null);
     }
     localStorage.removeItem(STORAGE_KEY);
-    showToast(`Режим ${p}`, "info");
+    showToast(`Preset ${p}`, "info");
   }
 
-  const modeLabel = mode === "work" ? "РАБОТА" : mode === "break" ? "ПЕРЕРЫВ" : "ДЛИННЫЙ ПЕРЕРЫВ";
+  const modeLabel = mode === "work" ? t("focus", "work") : mode === "break" ? t("focus", "break") : t("focus", "longBreak");
 
   if (loading) return (
     <main className="p-4 flex flex-col items-center">
@@ -255,7 +257,7 @@ export default function FocusPage() {
       </div>
       <div className="flex items-center gap-2 mb-8 animate-fade-up">
         {[0,1,2,3].map((i) => <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${i < sessionsDone ? "bg-black dark:bg-white" : "bg-ios-separator"}`} />)}
-        <span className="text-sm text-ios-gray ml-2">{sessionsDone}/4 сессий</span>
+        <span className="text-sm text-ios-gray ml-2">{sessionsDone}/4 {t("focus", "sessions")}</span>
       </div>
       <div className="flex items-center gap-6 mb-10 animate-fade-up">
         <button onClick={resetTimer} className="w-14 h-14 rounded-full bg-white dark:bg-ios-card-dark flex items-center justify-center shadow-sm border border-ios-separator/30 active:scale-90 transition-transform"><RotateCcw size={22} /></button>
@@ -263,14 +265,14 @@ export default function FocusPage() {
         <button onClick={stopTimer} className="w-14 h-14 rounded-full bg-white dark:bg-ios-card-dark flex items-center justify-center shadow-sm border border-ios-separator/30 active:scale-90 transition-transform"><Square size={22} fill="currentColor" /></button>
       </div>
       <div className="w-full max-w-sm animate-fade-up">
-        <p className="text-xs font-medium text-ios-gray uppercase tracking-wider mb-2">Текущая задача</p>
+        <p className="text-xs font-medium text-ios-gray uppercase tracking-wider mb-2">{t("focus", "currentTask")}</p>
         <button onClick={() => setShowTaskSelect(!showTaskSelect)} className="w-full bg-white dark:bg-ios-card-dark rounded-2xl px-4 py-3 shadow-sm border border-ios-separator/30 flex items-center justify-between text-left active:scale-[0.98] transition-transform">
-          <span className={selectedTask ? "text-base font-medium" : "text-ios-gray"}>{tasks.find((t) => t.id === selectedTask)?.title || "Выберите задачу..."}</span>
+          <span className={selectedTask ? "text-base font-medium" : "text-ios-gray"}>{tasks.find((t) => t.id === selectedTask)?.title || t("focus", "chooseTask")}</span>
           <ChevronDown size={18} className={`text-ios-gray transition-transform ${showTaskSelect ? "rotate-180" : ""}`} />
         </button>
         {showTaskSelect && (
           <div className="mt-2 bg-white dark:bg-ios-card-dark rounded-2xl shadow-sm border border-ios-separator/30 overflow-hidden animate-scale-in">
-            {tasks.length === 0 && <div className="px-4 py-3 text-ios-gray text-sm">Нет активных задач</div>}
+            {tasks.length === 0 && <div className="px-4 py-3 text-ios-gray text-sm">{t("focus", "noActiveTasks")}</div>}
             {tasks.map((task) => (
               <button key={task.id} onClick={() => { setSelectedTask(task.id); setShowTaskSelect(false); }} className={`w-full px-4 py-3 text-left text-sm hover:bg-ios-bg dark:hover:bg-white/5 transition-colors ${selectedTask === task.id ? "font-medium bg-ios-bg dark:bg-white/5" : ""}`}>{task.title}</button>
             ))}

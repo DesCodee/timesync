@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import { anim } from "@/lib/anim";
 import { SkeletonWidget, SkeletonCard } from "@/components/skeletons";
+import { useTranslation } from "@/hooks/use-translation";
 
 type Task = { is_completed: boolean; completed_at: string | null; created_at: string; priority: string };
 type FocusSession = { actual_duration_min: number | null; started_at: string };
@@ -23,6 +24,7 @@ function getLast7Days() {
 export default function AnalyticsPage() {
   const { user } = useUser();
   const supabase = createClient();
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [focus, setFocus] = useState<FocusSession[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -86,25 +88,20 @@ export default function AnalyticsPage() {
   if (loading) return (
     <main className="p-4 space-y-4">
       <div className="skeleton h-8 w-48 mb-2" />
-      <div className="grid grid-cols-2 gap-3">
-        {[0,1,2,3].map((i) => <SkeletonWidget key={i} />)}
-      </div>
-      <SkeletonCard lines={4} />
-      <SkeletonCard lines={4} />
-      <SkeletonCard lines={3} />
-      <SkeletonCard lines={2} />
+      <div className="grid grid-cols-2 gap-3">{[0,1,2,3].map((i) => <SkeletonWidget key={i} />)}</div>
+      <SkeletonCard lines={4} /><SkeletonCard lines={4} /><SkeletonCard lines={3} /><SkeletonCard lines={2} />
     </main>
   );
 
   return (
     <main className="p-4 space-y-4">
-      <h1 className={anim("text-[28px] font-bold mb-2 animate-fade-up")}>Аналитика</h1>
+      <h1 className={anim("text-[28px] font-bold mb-2 animate-fade-up")}>{t("analytics", "title")}</h1>
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: "Выполнение", value: `${completionRate}%`, sub: `${doneTasks} из ${totalTasks}`, color: "text-brand-green" },
-          { label: "Фокус (всего)", value: `${Math.floor(totalFocusMin / 60)}ч ${totalFocusMin % 60}м`, sub: `${focus.length} сессий`, color: "text-brand-blue" },
-          { label: "Привычки", value: `${habitsDoneToday}/${habits.length}`, sub: "выполнено сегодня", color: "text-brand-orange" },
-          { label: "Стрик", value: `${overallMaxStreak}д`, sub: "макс. серия", color: "text-brand-purple" },
+          { label: t("analytics", "completion"), value: `${completionRate}%`, sub: `${doneTasks} / ${totalTasks}`, color: "text-brand-green" },
+          { label: t("analytics", "focusTotal"), value: `${Math.floor(totalFocusMin / 60)}ч ${totalFocusMin % 60}м`, sub: `${focus.length} ${t("focus", "sessions")}`, color: "text-brand-blue" },
+          { label: t("analytics", "habitsDone"), value: `${habitsDoneToday}/${habits.length}`, sub: t("analytics", "habitsSub"), color: "text-brand-orange" },
+          { label: t("analytics", "maxStreak"), value: `${overallMaxStreak}д`, sub: t("analytics", "maxStreakSub"), color: "text-brand-purple" },
         ].map((w, i) => (
           <div key={w.label} className={anim("animate-fade-up", i)} style={{ animationDelay: `${i * 0.05}s` }}>
             <div className="bg-white dark:bg-ios-card-dark rounded-2xl p-4 shadow-sm border border-ios-separator/30 active:scale-[0.97] transition-transform">
@@ -115,9 +112,10 @@ export default function AnalyticsPage() {
           </div>
         ))}
       </div>
+
       <div className={anim("animate-fade-up", 2)}>
         <div className="bg-white dark:bg-ios-card-dark rounded-2xl p-4 shadow-sm border border-ios-separator/30">
-          <div className="flex items-center justify-between mb-4"><h3 className="text-base font-bold">Выполнение задач</h3><span className="text-xs text-ios-gray">7 дней</span></div>
+          <div className="flex items-center justify-between mb-4"><h3 className="text-base font-bold">{t("analytics", "taskChart")}</h3><span className="text-xs text-ios-gray">{t("analytics", "days7")}</span></div>
           <div className="flex items-end gap-2 h-32">
             {taskChart.map((d, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -130,9 +128,10 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
+
       <div className={anim("animate-fade-up", 3)}>
         <div className="bg-white dark:bg-ios-card-dark rounded-2xl p-4 shadow-sm border border-ios-separator/30">
-          <div className="flex items-center justify-between mb-4"><h3 className="text-base font-bold">Часы фокуса</h3><span className="text-xs text-ios-gray">7 дней</span></div>
+          <div className="flex items-center justify-between mb-4"><h3 className="text-base font-bold">{t("analytics", "focusChart")}</h3><span className="text-xs text-ios-gray">{t("analytics", "days7")}</span></div>
           <div className="flex items-end gap-2 h-32">
             {focusChart.map((d, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -145,9 +144,10 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
+
       <div className={anim("animate-fade-up", 4)}>
         <div className="bg-white dark:bg-ios-card-dark rounded-2xl p-4 shadow-sm border border-ios-separator/30">
-          <h3 className="text-base font-bold mb-4">Приоритеты (активные)</h3>
+          <h3 className="text-base font-bold mb-4">{t("analytics", "priorities")}</h3>
           <div className="space-y-3">
             {Object.entries(activeByPriority).map(([label, count]) => (
               <div key={label} className="flex items-center gap-3">
@@ -161,21 +161,23 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
+
       <div className={anim("animate-fade-up", 5)}>
         <div className="bg-white dark:bg-ios-card-dark rounded-2xl p-4 shadow-sm border border-ios-separator/30 flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-brand-orange/10 flex items-center justify-center">
             <span className="text-2xl font-bold text-brand-orange">{overallMaxStreak}</span>
           </div>
           <div>
-            <h3 className="text-base font-bold">Дней подряд</h3>
-            <p className="text-sm text-ios-gray">Продолжайте в том же духе!</p>
+            <h3 className="text-base font-bold">{t("analytics", "daysInRow")}</h3>
+            <p className="text-sm text-ios-gray">{t("analytics", "keepItUp")}</p>
           </div>
           <span className="ml-auto text-2xl">🔥</span>
         </div>
       </div>
+
       <div className={anim("animate-fade-up", 6)}>
         <div className="bg-white dark:bg-ios-card-dark rounded-2xl p-4 shadow-sm border border-ios-separator/30">
-          <h3 className="text-base font-bold mb-4">Трекер привычек (14 дней)</h3>
+          <h3 className="text-base font-bold mb-4">{t("analytics", "habitTracker")} (14 {t("analytics", "days7")})</h3>
           <div className="space-y-3">
             {habits.map((h) => (
               <div key={h.id} className="flex items-center gap-2">
@@ -192,7 +194,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             ))}
-            {habits.length === 0 && <p className="text-ios-gray text-sm">Нет привычек</p>}
+            {habits.length === 0 && <p className="text-ios-gray text-sm">{t("analytics", "noHabits")}</p>}
           </div>
         </div>
       </div>
