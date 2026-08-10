@@ -55,7 +55,7 @@ export default function AccountPage() {
 
   return (
     <AppShell>
-      <div className="max-w-md mx-auto space-y-6 p-4">
+      <div className="max-w-md mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><ArrowLeft size={22} /></Link>
           <h1 className="text-[28px] font-bold">Account</h1>
@@ -89,7 +89,7 @@ export default function AccountPage() {
             <button onClick={() => setShowDeleteConfirm(true)} className="w-full border border-brand-red text-brand-red py-3 rounded-2xl text-base font-medium active:scale-[0.98] transition-transform">Delete Account</button>
           ) : (
             <div className="space-y-3 animate-fade-up">
-              <div className="flex items-start gap-2 text-brand-red bg-brand-red/10 rounded-xl p-3">
+              <div className="flex items-start gap text-brand-red bg-brand-red/10 rounded-xl p-3">
                 <AlertTriangle size={18} className="flex-shrink-0 mt-0.5" />
                 <p className="text-sm">This will permanently delete all your data. This action cannot be undone.</p>
               </div>

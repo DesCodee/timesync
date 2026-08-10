@@ -132,11 +132,13 @@ export default function Dashboard() {
     </AppShell>
   );
   if (loading) return (
-    <main className="p-4 space-y-4">
+    <AppShell>
+      <main className="p-4 space-y-4">
       <div className="skeleton h-8 w-48 mb-2" />
       <div className="grid grid-cols-2 gap-3">{[0,1,2,3].map((i) => <SkeletonWidget key={i} />)}</div>
       <SkeletonCard lines={3} /><SkeletonCard lines={2} /><SkeletonCard lines={2} />
     </main>
+    </AppShell>
   );
   const greetKey = greeting();
   const greetText = greetKey === "morning" ? t("dashboard", "greeting_morning") : greetKey === "day" ? t("dashboard", "greeting_day") : t("dashboard", "greeting_evening");
